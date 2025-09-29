@@ -1,5 +1,6 @@
 """Backend Developer Agent for server-side implementation."""
 
+from typing import Dict, Any
 from agents.base_agent import BaseAgent
 from config.agent_config import get_agent_config
 
@@ -15,23 +16,86 @@ class BackendDeveloperAgent(BaseAgent):
             llm_config=config["llm_config"]
         )
 
-    def process_request(self, message: str, context=None):
-        """Generate backend code based on architecture."""
+    async def generate_backend_code(self, architecture: Dict[str, Any], requirements: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate backend code based on architecture and requirements using Claude."""
+
+        # Extract key information for code generation
+        project_type = requirements.get('project_type', 'web_application')
+        user_stories = requirements.get('user_stories', [])
+        functional_requirements = requirements.get('functional_requirements', [])
+
+        code_generation_prompt = f"""
+        As a Senior Backend Developer, generate production-ready Python code for this project.
+
+        Project Context:
+        - Type: {project_type}
+        - Functional Requirements: {functional_requirements}
+        - User Stories: {len(user_stories)} stories defined
+        - Architecture: {architecture.get('architecture_analysis', 'FastAPI-based system')}
+
+        Generate the following files:
+
+        1. **main.py** - FastAPI application with:
+           - Proper app configuration
+           - CORS middleware
+           - Authentication middleware
+           - Error handling
+           - API endpoints based on user stories
+           - Health check endpoint
+
+        2. **models.py** - Database models using SQLAlchemy:
+           - User model with authentication fields
+           - Business domain models based on requirements
+           - Proper relationships and constraints
+
+        3. **auth.py** - Authentication system:
+           - JWT token handling
+           - Password hashing
+           - Login/register endpoints
+
+        4. **database.py** - Database configuration:
+           - SQLAlchemy setup
+           - Database connection handling
+           - Migration support
+
+        5. **requirements.txt** - All necessary dependencies
+
+        6. **Dockerfile** - Production-ready container setup
+
+        Focus on:
+        - Security best practices
+        - Proper error handling
+        - Input validation with Pydantic
+        - Clean, maintainable code
+        - Production readiness
+
+        Provide complete, working code files that can be immediately deployed.
+        """
+
         try:
-            # Simplified backend generation
-            code_files = {
+            response = await self.process_request_async(code_generation_prompt)
+
+            if response["status"] == "success":
+                return {
+                    "generated_code": response["response"],
+                    "generation_method": "claude_powered",
+                    "based_on_architecture": True,
+                    "requirements_implemented": len(user_stories),
+                    "code_language": "Python",
+                    "framework": "FastAPI"
+                }
+            else:
+                raise Exception(f"Code generation failed: {response.get('error')}")
+
+        except Exception as e:
+            # Fallback to basic template
+            basic_code = {
                 "main.py": """from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Generated API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 @app.get("/")
 async def root():
@@ -41,28 +105,39 @@ async def root():
 async def health():
     return {"status": "healthy"}
 """,
-                "requirements.txt": """fastapi==0.104.1
-uvicorn[standard]==0.24.0
-sqlalchemy==2.0.23
-psycopg2-binary==2.9.7
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
-""",
-                "Dockerfile": """FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-"""
+                "requirements.txt": "fastapi==0.104.1\nuvicorn[standard]==0.24.0"
             }
+
+            return {
+                "error": str(e),
+                "fallback_code": True,
+                "basic_files": basic_code,
+                "generation_method": "fallback_template"
+            }
+
+    def process_request(self, message: str, context=None):
+        """Generate backend code based on architecture."""
+        try:
+            # Get architecture and requirements from context
+            architecture = context.get("dependency_Design Architecture", {}).get("output", {}).get("architecture", {})
+            requirements = context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {})
+
+            if not architecture and not requirements:
+                return {
+                    "agent": self.name,
+                    "status": "error",
+                    "error": "No architecture or requirements found in context"
+                }
+
+            # Generate intelligent backend code
+            import asyncio
+            code_result = asyncio.run(self.generate_backend_code(architecture, requirements))
 
             return {
                 "agent": self.name,
                 "status": "success",
-                "output": {"code_files": code_files}
+                "output": code_result
             }
+
         except Exception as e:
             return {"agent": self.name, "status": "error", "error": str(e)}

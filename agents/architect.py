@@ -19,100 +19,64 @@ class ArchitectAgent(BaseAgent):
             llm_config=config["llm_config"]
         )
 
-    def create_architecture(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
-        """Create system architecture based on requirements."""
+    async def create_architecture(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
+        """Create system architecture based on requirements using Claude."""
 
-        architecture = {
-            "system_overview": {
-                "type": "web_application",
-                "pattern": "layered_architecture",
-                "deployment": "cloud_native"
-            },
-            "technology_stack": {
-                "backend": {
-                    "framework": "FastAPI",
-                    "language": "Python 3.11+",
-                    "async": True,
-                    "orm": "SQLAlchemy"
-                },
-                "database": {
-                    "primary": "PostgreSQL",
-                    "connection_pool": True,
-                    "migrations": "Alembic"
-                },
-                "frontend": {
-                    "framework": "HTML/CSS/JavaScript",
-                    "ui_library": "Bootstrap",
-                    "build_tool": "None (simple)"
-                },
-                "deployment": {
-                    "containerization": "Docker",
-                    "orchestration": "Docker Compose",
-                    "cloud": "Any (GCP/AWS/Azure)"
+        architecture_prompt = f"""
+        As a System Architect, design a comprehensive technical architecture for this project.
+
+        Requirements Analysis:
+        - Project Type: {requirements.get('project_type', 'web_application')}
+        - Complexity: {requirements.get('estimated_complexity', 'Medium')}
+        - Functional Requirements: {requirements.get('functional_requirements', [])}
+        - Non-functional Requirements: {requirements.get('non_functional_requirements', {})}
+        - Recommended Tech Stack: {requirements.get('recommended_tech_stack', [])}
+        - User Stories: {len(requirements.get('user_stories', []))} stories defined
+
+        Design a production-ready architecture with:
+
+        1. **System Overview** - architecture pattern, deployment model
+        2. **Technology Stack** - backend framework, database, frontend, deployment tools
+        3. **Component Architecture** - major system components and their responsibilities
+        4. **API Design** - RESTful endpoints based on the user stories
+        5. **Data Model** - database schema and relationships
+        6. **Security Architecture** - authentication, authorization, data protection
+        7. **Deployment Architecture** - containerization, orchestration, cloud services
+        8. **Scalability Considerations** - how the system can grow
+        9. **Technical Decisions** - rationale for major technology choices
+
+        Focus on Python-based solutions (FastAPI, Django, Flask) but adapt based on requirements.
+        Provide specific, implementable recommendations with clear justifications.
+        """
+
+        try:
+            response = await self.process_request_async(architecture_prompt)
+
+            if response["status"] == "success":
+                return {
+                    "architecture_analysis": response["response"],
+                    "design_method": "claude_powered",
+                    "based_on_requirements": True,
+                    "requirements_summary": {
+                        "project_type": requirements.get('project_type'),
+                        "complexity": requirements.get('estimated_complexity'),
+                        "feature_count": len(requirements.get('user_stories', []))
+                    }
                 }
-            },
-            "components": {
-                "api_gateway": {
-                    "responsibility": "Request routing and authentication",
-                    "technology": "FastAPI built-in"
-                },
-                "business_logic": {
-                    "responsibility": "Core application logic",
-                    "technology": "Python modules"
-                },
-                "data_access": {
-                    "responsibility": "Database operations",
-                    "technology": "SQLAlchemy ORM"
-                },
-                "authentication": {
-                    "responsibility": "User authentication and authorization",
-                    "technology": "JWT tokens"
-                }
-            },
-            "api_design": {
-                "style": "RESTful",
-                "versioning": "URL path versioning (/api/v1/)",
-                "documentation": "OpenAPI/Swagger",
-                "endpoints": [
-                    {"method": "POST", "path": "/api/v1/auth/register", "description": "User registration"},
-                    {"method": "POST", "path": "/api/v1/auth/login", "description": "User login"},
-                    {"method": "GET", "path": "/api/v1/items", "description": "List items"},
-                    {"method": "POST", "path": "/api/v1/items", "description": "Create item"},
-                    {"method": "GET", "path": "/api/v1/items/{id}", "description": "Get item"},
-                    {"method": "PUT", "path": "/api/v1/items/{id}", "description": "Update item"},
-                    {"method": "DELETE", "path": "/api/v1/items/{id}", "description": "Delete item"}
-                ]
-            },
-            "data_model": {
-                "user": {
-                    "fields": ["id", "email", "password_hash", "created_at", "updated_at"],
-                    "relationships": ["items"]
-                },
-                "item": {
-                    "fields": ["id", "title", "description", "user_id", "created_at", "updated_at"],
-                    "relationships": ["user"]
-                }
-            },
-            "security": {
-                "authentication": "JWT tokens",
-                "authorization": "Role-based",
-                "input_validation": "Pydantic models",
-                "password_hashing": "bcrypt",
-                "cors": "Configured for frontend"
-            },
-            "deployment_architecture": {
-                "containers": {
-                    "api": "FastAPI application",
+            else:
+                raise Exception(f"Architecture design failed: {response.get('error')}")
+
+        except Exception as e:
+            # Fallback architecture
+            return {
+                "error": str(e),
+                "fallback_architecture": True,
+                "basic_stack": {
+                    "backend": "FastAPI",
                     "database": "PostgreSQL",
-                    "nginx": "Reverse proxy (optional)"
-                },
-                "networking": "Docker network",
-                "volumes": "Database persistence",
-                "environment": "Environment variables for config"
+                    "deployment": "Docker"
+                }
             }
-        }
-
-        return architecture
 
     def process_request(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Process architecture design request."""
@@ -126,26 +90,18 @@ class ArchitectAgent(BaseAgent):
                     "error": "No structured requirements found in context"
                 }
 
-            architecture = self.create_architecture(requirements)
+            # Use Claude-powered architecture design
+            import asyncio
+            architecture = asyncio.run(self.create_architecture(requirements))
 
             return {
                 "agent": self.name,
                 "status": "success",
                 "output": {
                     "architecture": architecture,
-                    "technical_decisions": [
-                        "FastAPI chosen for modern async Python development",
-                        "PostgreSQL for reliable data persistence",
-                        "JWT for stateless authentication",
-                        "Docker for consistent deployment",
-                        "RESTful API design for simplicity"
-                    ],
-                    "next_steps": [
-                        "Setup project structure",
-                        "Implement database models",
-                        "Create API endpoints",
-                        "Setup authentication"
-                    ]
+                    "design_method": architecture.get("design_method", "claude_powered"),
+                    "based_on_requirements": architecture.get("based_on_requirements", True),
+                    "requirements_used": architecture.get("requirements_summary", {})
                 }
             }
 
