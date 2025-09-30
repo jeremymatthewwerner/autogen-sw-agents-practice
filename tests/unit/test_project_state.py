@@ -99,8 +99,18 @@ class TestProjectState:
 
     def test_add_multiple_tasks(self, project_state):
         """Test adding multiple tasks to project state."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1")
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2")
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -139,8 +149,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_no_dependencies(self, project_state):
         """Test getting ready tasks when tasks have no dependencies."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", [])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=[],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -153,9 +175,27 @@ class TestProjectState:
 
     def test_get_ready_tasks_with_dependencies(self, project_state):
         """Test getting ready tasks with dependency chain."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", ["task-1"])
-        task3 = Task("task-3", "Task 3", "Description 3", "Agent3", ["task-2"])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=["task-1"],
+        )
+        task3 = Task(
+            id="task-3",
+            name="Task 3",
+            description="Description 3",
+            assigned_to="Agent3",
+            dependencies=["task-2"],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -180,8 +220,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_excludes_in_progress(self, project_state):
         """Test that ready tasks excludes tasks already in progress."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", [])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=[],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -197,8 +249,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_excludes_completed(self, project_state):
         """Test that ready tasks excludes completed tasks."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", [])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=[],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -214,8 +278,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_excludes_failed(self, project_state):
         """Test that ready tasks excludes failed tasks."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", [])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=[],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -231,8 +307,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_blocked_by_incomplete_dependencies(self, project_state):
         """Test that tasks are blocked when dependencies are incomplete."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", ["task-1"])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=["task-1"],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -247,8 +335,20 @@ class TestProjectState:
 
     def test_get_ready_tasks_blocked_by_failed_dependencies(self, project_state):
         """Test that tasks are blocked when dependencies failed."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", ["task-1"])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=["task-1"],
+        )
 
         project_state.add_task(task1)
         project_state.add_task(task2)
@@ -263,10 +363,26 @@ class TestProjectState:
 
     def test_get_ready_tasks_multiple_dependencies(self, project_state):
         """Test ready tasks with multiple dependencies."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", [])
-        task2 = Task("task-2", "Task 2", "Description 2", "Agent2", [])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=[],
+        )
+        task2 = Task(
+            id="task-2",
+            name="Task 2",
+            description="Description 2",
+            assigned_to="Agent2",
+            dependencies=[],
+        )
         task3 = Task(
-            "task-3", "Task 3", "Description 3", "Agent3", ["task-1", "task-2"]
+            id="task-3",
+            name="Task 3",
+            description="Description 3",
+            assigned_to="Agent3",
+            dependencies=["task-1", "task-2"],
         )
 
         project_state.add_task(task1)
@@ -293,7 +409,13 @@ class TestProjectState:
 
     def test_get_ready_tasks_missing_dependency(self, project_state):
         """Test ready tasks when dependency doesn't exist."""
-        task1 = Task("task-1", "Task 1", "Description 1", "Agent1", ["non-existent"])
+        task1 = Task(
+            id="task-1",
+            name="Task 1",
+            description="Description 1",
+            assigned_to="Agent1",
+            dependencies=["non-existent"],
+        )
 
         project_state.add_task(task1)
 
