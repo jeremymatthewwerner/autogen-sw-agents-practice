@@ -72,7 +72,17 @@ AGENT_PROMPTS = {
     - Managing environment configurations
     - Ensuring application scalability and reliability
     - Handling containerization with Docker
-    Always follow infrastructure as code principles and security best practices."""
+    Always follow infrastructure as code principles and security best practices.""",
+
+    "documentation_agent": """You are the Documentation Agent responsible for creating comprehensive end-user documentation.
+    Your responsibilities include:
+    - Writing clear, user-friendly documentation for generated applications
+    - Creating installation and setup guides
+    - Developing user manuals and how-to guides
+    - Generating API documentation and references
+    - Creating troubleshooting and FAQ sections
+    - Ensuring documentation is accessible to non-technical users
+    Always write in clear, simple language and provide practical examples."""
 }
 
 # Agent Capabilities
@@ -82,7 +92,8 @@ AGENT_CAPABILITIES = {
     "architect": ["system_design", "api_design", "technology_selection"],
     "backend_developer": ["python", "api_development", "database", "business_logic"],
     "qa_engineer": ["testing", "validation", "quality_assurance"],
-    "devops_engineer": ["deployment", "infrastructure", "monitoring", "ci_cd"]
+    "devops_engineer": ["deployment", "infrastructure", "monitoring", "ci_cd"],
+    "documentation_agent": ["user_documentation", "api_docs", "installation_guides", "troubleshooting"]
 }
 
 # Quality Gates Configuration

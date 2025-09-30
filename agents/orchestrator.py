@@ -104,6 +104,17 @@ class OrchestratorAgent(BaseAgent):
             assigned_to="DevOpsEngineer",
             dependencies=[testing_task_id]
         ))
+        deployment_task_id = task_id
+
+        # Phase 6: User Documentation
+        task_id = str(uuid.uuid4())
+        tasks.append(Task(
+            id=task_id,
+            name="Create User Documentation",
+            description="Generate comprehensive end-user documentation including README, user guide, API docs, and FAQ",
+            assigned_to="DocumentationAgent",
+            dependencies=[deployment_task_id]
+        ))
 
         # Add tasks to project state
         for task in tasks:

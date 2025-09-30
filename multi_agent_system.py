@@ -7,6 +7,7 @@ from agents.architect import ArchitectAgent
 from agents.backend_developer import BackendDeveloperAgent
 from agents.qa_engineer import QAEngineerAgent
 from agents.devops_engineer import DevOpsEngineerAgent
+from agents.documentation_agent import DocumentationAgent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,7 +26,8 @@ class MultiAgentSystem:
             "Architect": ArchitectAgent(),
             "BackendDeveloper": BackendDeveloperAgent(),
             "QAEngineer": QAEngineerAgent(),
-            "DevOpsEngineer": DevOpsEngineerAgent()
+            "DevOpsEngineer": DevOpsEngineerAgent(),
+            "DocumentationAgent": DocumentationAgent()
         }
 
         for name, agent in agents.items():
