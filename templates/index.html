@@ -243,54 +243,8 @@
             <div class="card">
                 <h2><i class="fas fa-users"></i> Agent Status</h2>
                 <div class="status-grid" id="agentStatus">
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">Product Manager</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">Frontend Engineer</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">Backend Engineer</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">Database Engineer</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">DevOps Engineer</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">QA Engineer</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
-                    </div>
-                    <div class="agent-status active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <div style="font-weight: 500;">Tech Lead</div>
-                            <div style="font-size: 12px; color: #718096;">Ready</div>
-                        </div>
+                    <div style="padding: 20px; text-align: center; color: #718096;">
+                        Loading agent status...
                     </div>
                 </div>
             </div>
@@ -362,44 +316,52 @@
         }
 
         function updateAgentStatus(data) {
-            const agentElements = document.querySelectorAll('.agent-status');
+            const statusGrid = document.getElementById('agentStatus');
 
             if (data.agents && data.agents.length > 0) {
-                // Update each agent element with individual agent data
-                agentElements.forEach((element, index) => {
-                    if (index < data.agents.length) {
-                        const agent = data.agents[index];
-                        const indicator = element.querySelector('.status-indicator');
-                        const nameElement = element.querySelector('div:last-child div:first-child');
-                        const statusText = element.querySelector('div:last-child div:last-child');
+                // Clear existing content and rebuild from API data
+                statusGrid.innerHTML = '';
 
-                        // Update agent name
-                        nameElement.textContent = agent.name;
+                data.agents.forEach(agent => {
+                    const agentElement = document.createElement('div');
 
-                        // Update status based on agent status
-                        switch (agent.status) {
-                            case 'working':
-                                indicator.className = 'status-indicator busy';
-                                statusText.textContent = agent.current_task || 'Working...';
-                                element.className = 'agent-status busy';
-                                break;
-                            case 'ready':
-                                indicator.className = 'status-indicator';
-                                statusText.textContent = agent.current_task || 'Ready';
-                                element.className = 'agent-status active';
-                                break;
-                            case 'idle':
-                                indicator.className = 'status-indicator';
-                                statusText.textContent = agent.current_task || 'Idle';
-                                element.className = 'agent-status';
-                                break;
-                            default:
-                                indicator.className = 'status-indicator';
-                                statusText.textContent = 'Ready';
-                                element.className = 'agent-status active';
-                        }
+                    // Determine CSS classes based on agent status
+                    let statusClass = 'agent-status';
+                    let indicatorClass = 'status-indicator';
+                    let statusText = agent.current_task || 'Ready';
+
+                    switch (agent.status) {
+                        case 'working':
+                            statusClass += ' busy';
+                            indicatorClass += ' busy';
+                            statusText = agent.current_task || 'Working...';
+                            break;
+                        case 'ready':
+                            statusClass += ' active';
+                            statusText = agent.current_task || 'Ready';
+                            break;
+                        case 'idle':
+                            statusText = agent.current_task || 'Idle';
+                            break;
+                        default:
+                            statusClass += ' active';
+                            statusText = 'Ready';
                     }
+
+                    agentElement.className = statusClass;
+                    agentElement.innerHTML = `
+                        <div class="${indicatorClass}"></div>
+                        <div>
+                            <div style="font-weight: 500;">${agent.name}</div>
+                            <div style="font-size: 12px; color: #718096;">${statusText}</div>
+                        </div>
+                    `;
+
+                    statusGrid.appendChild(agentElement);
                 });
+            } else {
+                // Show error message if no agent data
+                statusGrid.innerHTML = '<div style="padding: 20px; text-align: center; color: #e53e3e;">Unable to load agent status</div>';
             }
         }
 
