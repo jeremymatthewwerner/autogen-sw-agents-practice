@@ -168,7 +168,7 @@ jobs:
 
     - name: Login to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-get-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
@@ -203,7 +203,7 @@ jobs:
 
     - name: Login to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-get-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Update ECS service
       run: |
