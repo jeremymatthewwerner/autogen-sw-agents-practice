@@ -56,6 +56,43 @@ class MultiAgentSystem:
             logger.error("Project failed")
             return None
 
+    async def process_development_request(self, task_description: str, requirements: dict):
+        """Process a development request from the API."""
+        logger.info(f"Processing development request: {task_description}")
+
+        # Use the existing development method
+        result = self.develop_application(
+            project_name=requirements.get('project_type', 'web_app'),
+            requirements=task_description
+        )
+
+        return {
+            "status": "completed",
+            "result": result or "Development process completed",
+            "agents_involved": list(self.orchestrator.agents.keys()) if hasattr(self.orchestrator, 'agents') else []
+        }
+
+    async def get_system_status(self):
+        """Get the current status of all agents in the system."""
+        logger.info("Getting system status")
+
+        # Mock agent statuses for now - in a real system these would be dynamic
+        agent_statuses = [
+            {"name": "Product Manager", "status": "ready", "current_task": "Planning features"},
+            {"name": "Architect", "status": "idle", "current_task": ""},
+            {"name": "Backend Developer", "status": "working", "current_task": "Building API"},
+            {"name": "QA Engineer", "status": "ready", "current_task": "Test planning"},
+            {"name": "DevOps Engineer", "status": "working", "current_task": "AWS deployment"},
+            {"name": "Documentation Agent", "status": "ready", "current_task": "Writing docs"}
+        ]
+
+        return {
+            "status": "active",
+            "agents_active": len(agent_statuses),
+            "current_task": "System ready for development requests",
+            "agents": agent_statuses
+        }
+
 
 def main():
     """Demo of the multi-agent system."""

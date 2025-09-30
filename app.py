@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 import uvicorn
 from dotenv import load_dotenv
 
@@ -21,14 +21,24 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Initialize the multi-agent system once at startup
+from multi_agent_system import MultiAgentSystem
+multi_agent_system = MultiAgentSystem()
+
 class DevelopmentRequest(BaseModel):
     task_description: str
     requirements: Dict[str, Any] = {}
+
+class AgentStatus(BaseModel):
+    name: str
+    status: str  # "ready", "working", "idle"
+    current_task: str = ""
 
 class StatusResponse(BaseModel):
     status: str
     agents_active: int
     current_task: str = None
+    agents: List[AgentStatus] = []
 
 @app.get("/health")
 async def health_check():
@@ -37,10 +47,7 @@ async def health_check():
 @app.post("/develop")
 async def develop_software(request: DevelopmentRequest):
     try:
-        from multi_agent_system import MultiAgentSystem
-
-        system = MultiAgentSystem()
-        result = await system.process_development_request(
+        result = await multi_agent_system.process_development_request(
             request.task_description,
             request.requirements
         )
@@ -50,30 +57,14 @@ async def develop_software(request: DevelopmentRequest):
             "task": request.task_description,
             "result": result
         }
-    except ImportError:
-        return {
-            "status": "demo_mode",
-            "task": request.task_description,
-            "result": "Multi-agent system would process this request in production"
-        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/status")
 async def get_status():
     try:
-        from multi_agent_system import MultiAgentSystem
-
-        system = MultiAgentSystem()
-        status = await system.get_system_status()
-
+        status = await multi_agent_system.get_system_status()
         return StatusResponse(**status)
-    except ImportError:
-        return StatusResponse(
-            status="demo_mode",
-            agents_active=7,
-            current_task="System ready for development requests"
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
