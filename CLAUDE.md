@@ -225,11 +225,106 @@ Currently no formal testing framework is configured, but you can:
 
 ## Cloud Deployment
 
-The system includes AWS deployment infrastructure:
-- `infrastructure/cloudformation.yaml` - AWS CloudFormation template
-- `deploy.sh` - Deployment script
+### AWS Setup Requirements
+
+Before deploying to AWS, you need:
+
+1. **AWS Account** with appropriate permissions for:
+   - VPC, Subnets, Internet Gateway, NAT Gateway
+   - ECS (Elastic Container Service) with Fargate
+   - ECR (Elastic Container Registry)
+   - RDS (PostgreSQL database)
+   - ElastiCache (Redis)
+   - Application Load Balancer
+   - S3 buckets
+   - Secrets Manager
+   - IAM roles and policies
+
+2. **Required Tools Installation**:
+```bash
+# Install AWS CLI
+brew install awscli  # macOS
+# or: pip install awscli
+
+# Install Terraform
+brew install terraform  # macOS
+# or download from https://www.terraform.io/downloads
+
+# Install Docker
+# Download from https://www.docker.com/products/docker-desktop
+
+# Install jq (for JSON processing)
+brew install jq  # macOS
+```
+
+3. **Configure AWS Credentials**:
+```bash
+# Option 1: Configure AWS CLI (recommended)
+aws configure
+# Enter your AWS Access Key ID
+# Enter your AWS Secret Access Key
+# Enter default region (e.g., us-east-1)
+# Enter output format (json)
+
+# Option 2: Add to .env file (less secure)
+# Uncomment and fill in the AWS credentials section in .env
+```
+
+4. **Verify AWS Setup**:
+```bash
+# Test AWS connectivity
+aws sts get-caller-identity
+
+# Should return your AWS account details
+```
+
+### Deployment Infrastructure
+
+The system uses Terraform for infrastructure as code:
+- `infrastructure/terraform/main.tf` - Core infrastructure
+- `infrastructure/terraform/variables.tf` - Configuration variables
+- `infrastructure/terraform/outputs.tf` - Resource outputs
+- `infrastructure/ecs-task-definition.json` - ECS task configuration
+- `deploy.sh` - Automated deployment script
 - `Dockerfile.cloud` - Container configuration
-- See `DEPLOYMENT.md` for detailed deployment instructions
+
+### Deployment Process
+
+```bash
+# Set environment variables (optional, defaults in deploy.sh)
+export AWS_REGION=us-east-1
+export ENVIRONMENT=dev
+
+# Run deployment script
+./deploy.sh
+
+# The script will:
+# 1. Check prerequisites (AWS CLI, Terraform, Docker)
+# 2. Validate AWS credentials
+# 3. Prompt for database password (min 8 chars)
+# 4. Deploy infrastructure with Terraform
+# 5. Build and push Docker image to ECR
+# 6. Create ECS service with Fargate
+# 7. Provide URLs for accessing the system
+```
+
+### Estimated AWS Costs
+
+Monthly estimates for minimal deployment:
+- ECS Fargate: ~$50-70 (1 task, 0.5 vCPU, 1GB RAM)
+- RDS PostgreSQL: ~$15-30 (db.t3.micro)
+- ElastiCache Redis: ~$15-25 (cache.t3.micro)
+- ALB: ~$20-25
+- NAT Gateway: ~$45 per gateway (2 gateways = $90)
+- Data transfer: ~$10-20
+- **Total: ~$200-250/month**
+
+To reduce costs for development:
+- Use single NAT Gateway instead of 2
+- Use smaller instance types
+- Stop services when not in use
+
+See `DEPLOYMENT.md` for detailed deployment instructions
 
 ## Project Status
 
