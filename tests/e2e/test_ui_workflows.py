@@ -362,7 +362,6 @@ class TestUIWorkflows:
 
         async def track_status(route):
             """Track status updates to detect flashing."""
-            nonlocal status_updates
             response_data = {
                 "status": "ready",
                 "agents_active": 6,

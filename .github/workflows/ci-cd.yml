@@ -83,8 +83,10 @@ jobs:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        uvicorn multi_agent_system:app --host 0.0.0.0 --port 8000 &
-        sleep 10
+        uvicorn app:app --host 0.0.0.0 --port 8000 &
+        sleep 5
+        # Wait for server to be ready
+        timeout 30 bash -c 'until curl -f http://localhost:8000/status > /dev/null 2>&1; do sleep 1; done' || echo "Warning: Server may not be fully ready"
 
     - name: Run E2E tests
       env:
