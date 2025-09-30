@@ -363,20 +363,44 @@
 
         function updateAgentStatus(data) {
             const agentElements = document.querySelectorAll('.agent-status');
-            agentElements.forEach((element, index) => {
-                const indicator = element.querySelector('.status-indicator');
-                const statusText = element.querySelector('div:last-child div:last-child');
 
-                if (data.status === 'demo_mode') {
-                    indicator.className = 'status-indicator';
-                    statusText.textContent = 'Ready';
-                    element.className = 'agent-status active';
-                } else {
-                    indicator.className = 'status-indicator busy';
-                    statusText.textContent = 'Working';
-                    element.className = 'agent-status busy';
-                }
-            });
+            if (data.agents && data.agents.length > 0) {
+                // Update each agent element with individual agent data
+                agentElements.forEach((element, index) => {
+                    if (index < data.agents.length) {
+                        const agent = data.agents[index];
+                        const indicator = element.querySelector('.status-indicator');
+                        const nameElement = element.querySelector('div:last-child div:first-child');
+                        const statusText = element.querySelector('div:last-child div:last-child');
+
+                        // Update agent name
+                        nameElement.textContent = agent.name;
+
+                        // Update status based on agent status
+                        switch (agent.status) {
+                            case 'working':
+                                indicator.className = 'status-indicator busy';
+                                statusText.textContent = agent.current_task || 'Working...';
+                                element.className = 'agent-status busy';
+                                break;
+                            case 'ready':
+                                indicator.className = 'status-indicator';
+                                statusText.textContent = agent.current_task || 'Ready';
+                                element.className = 'agent-status active';
+                                break;
+                            case 'idle':
+                                indicator.className = 'status-indicator';
+                                statusText.textContent = agent.current_task || 'Idle';
+                                element.className = 'agent-status';
+                                break;
+                            default:
+                                indicator.className = 'status-indicator';
+                                statusText.textContent = 'Ready';
+                                element.className = 'agent-status active';
+                        }
+                    }
+                });
+            }
         }
 
         async function submitDevelopmentRequest(taskDescription, projectType, priority) {
