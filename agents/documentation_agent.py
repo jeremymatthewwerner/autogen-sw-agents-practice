@@ -14,18 +14,20 @@ class DocumentationAgent(BaseAgent):
         super().__init__(
             name="DocumentationAgent",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
-    async def generate_user_documentation(self, project_context: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_user_documentation(
+        self, project_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate comprehensive user documentation using Claude."""
 
         # Extract context from other agents
-        requirements = project_context.get('requirements', {})
-        architecture = project_context.get('architecture', {})
-        backend_code = project_context.get('backend_code', {})
-        tests = project_context.get('tests', {})
-        deployment = project_context.get('deployment', {})
+        requirements = project_context.get("requirements", {})
+        architecture = project_context.get("architecture", {})
+        backend_code = project_context.get("backend_code", {})
+        tests = project_context.get("tests", {})
+        deployment = project_context.get("deployment", {})
 
         documentation_prompt = f"""
         As a Technical Documentation Writer, create comprehensive, user-friendly documentation for this software application.
@@ -105,14 +107,20 @@ class DocumentationAgent(BaseAgent):
                     "documentation": response["response"],
                     "generation_method": "claude_powered",
                     "documentation_types": [
-                        "README", "User Guide", "API Docs",
-                        "Installation Guide", "FAQ", "Changelog"
+                        "README",
+                        "User Guide",
+                        "API Docs",
+                        "Installation Guide",
+                        "FAQ",
+                        "Changelog",
                     ],
                     "target_audience": "end_users",
-                    "completeness": "comprehensive"
+                    "completeness": "comprehensive",
                 }
             else:
-                raise Exception(f"Documentation generation failed: {response.get('error')}")
+                raise Exception(
+                    f"Documentation generation failed: {response.get('error')}"
+                )
 
         except Exception as e:
             # Fallback basic documentation
@@ -144,36 +152,49 @@ Check the user guide and FAQ for detailed information.
                 "error": str(e),
                 "fallback_documentation": True,
                 "basic_files": basic_docs,
-                "generation_method": "fallback_template"
+                "generation_method": "fallback_template",
             }
 
-    def process_request(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def process_request(
+        self, message: str, context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """Process documentation generation request."""
         try:
             # Gather context from all previous agents
             project_context = {
-                'requirements': context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {}),
-                'architecture': context.get("dependency_Design Architecture", {}).get("output", {}).get("architecture", {}),
-                'backend_code': context.get("dependency_Implement Backend", {}).get("output", {}),
-                'tests': context.get("dependency_Write Tests", {}).get("output", {}),
-                'deployment': context.get("dependency_Prepare Deployment", {}).get("output", {})
+                "requirements": context.get("dependency_Analyze Requirements", {})
+                .get("output", {})
+                .get("structured_requirements", {}),
+                "architecture": context.get("dependency_Design Architecture", {})
+                .get("output", {})
+                .get("architecture", {}),
+                "backend_code": context.get("dependency_Implement Backend", {}).get(
+                    "output", {}
+                ),
+                "tests": context.get("dependency_Write Tests", {}).get("output", {}),
+                "deployment": context.get("dependency_Prepare Deployment", {}).get(
+                    "output", {}
+                ),
             }
 
             if not any(project_context.values()):
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No project context found from previous agents"
+                    "error": "No project context found from previous agents",
                 }
 
             # Generate intelligent user documentation
             import asyncio
-            documentation_result = asyncio.run(self.generate_user_documentation(project_context))
+
+            documentation_result = asyncio.run(
+                self.generate_user_documentation(project_context)
+            )
 
             return {
                 "agent": self.name,
                 "status": "success",
-                "output": documentation_result
+                "output": documentation_result,
             }
 
         except Exception as e:

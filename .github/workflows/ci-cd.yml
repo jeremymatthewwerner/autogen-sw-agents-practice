@@ -141,8 +141,8 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
-        head: HEAD
+        base: ${{ github.event.before }}
+        head: ${{ github.sha }}
 
   build-docker:
     name: Build Docker Image

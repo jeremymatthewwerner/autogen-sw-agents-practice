@@ -26,14 +26,12 @@ class BaseAgent:
         # Create Claude model client using existing pattern
         self.model_client = AnthropicChatCompletionClient(
             model=llm_config.get("model", "claude-3-5-sonnet-20241022"),
-            api_key=os.getenv("ANTHROPIC_API_KEY")
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
         )
 
         # Create assistant agent with Claude client
         self.agent = AssistantAgent(
-            name=name,
-            model_client=self.model_client,
-            description=system_prompt
+            name=name, model_client=self.model_client, description=system_prompt
         )
 
         self.system_prompt = system_prompt
@@ -45,7 +43,9 @@ class BaseAgent:
 
         logger.info(f"Initialized {name} agent with Claude integration")
 
-    async def process_request_async(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def process_request_async(
+        self, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Process a request asynchronously and return the response."""
         try:
             # Prepare the message with context if provided
@@ -59,44 +59,35 @@ class BaseAgent:
 
             # Send message to Claude via AutoGen
             response = await self.agent.on_messages(
-                [TextMessage(content=full_message, source="user")],
-                CancellationToken()
+                [TextMessage(content=full_message, source="user")], CancellationToken()
             )
 
             result = {
                 "agent": self.name,
                 "status": "success",
                 "message": full_message,
-                "response": response.chat_message.content
+                "response": response.chat_message.content,
             }
 
-            self.conversation_history.append({
-                "request": message,
-                "context": context,
-                "response": result
-            })
+            self.conversation_history.append(
+                {"request": message, "context": context, "response": result}
+            )
 
             return result
 
         except Exception as e:
             logger.error(f"Error in {self.name}: {str(e)}")
-            return {
-                "agent": self.name,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"agent": self.name, "status": "error", "error": str(e)}
 
-    def process_request(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process_request(
+        self, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Synchronous wrapper for process_request_async."""
         try:
             return asyncio.run(self.process_request_async(message, context))
         except Exception as e:
             logger.error(f"Error in sync wrapper for {self.name}: {str(e)}")
-            return {
-                "agent": self.name,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"agent": self.name, "status": "error", "error": str(e)}
 
     def get_history(self) -> List[Dict[str, Any]]:
         """Get the conversation history."""

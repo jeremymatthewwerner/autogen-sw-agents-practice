@@ -11,28 +11,29 @@ load_dotenv()
 
 # Create the model client
 model_client = AnthropicChatCompletionClient(
-    model="claude-3-5-sonnet-20240620",
-    api_key=os.getenv("ANTHROPIC_API_KEY")
+    model="claude-3-5-sonnet-20240620", api_key=os.getenv("ANTHROPIC_API_KEY")
 )
 
 # Create assistant agent
 assistant = AssistantAgent(
     "assistant",
     model_client=model_client,
-    description="An AI assistant that helps with creative writing"
+    description="An AI assistant that helps with creative writing",
 )
+
 
 # Run a simple conversation
 async def main():
     # Send a message to the assistant
     response = await assistant.on_messages(
         [TextMessage(content="Write a haiku about sailing.", source="user")],
-        CancellationToken()
+        CancellationToken(),
     )
 
     # Print the response
     print("Assistant's response:")
     print(response.chat_message.content)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -16,7 +16,7 @@ class ProductManagerAgent(BaseAgent):
         super().__init__(
             name="ProductManager",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
     async def analyze_requirements(self, raw_requirements: str) -> Dict[str, Any]:
@@ -73,7 +73,7 @@ class ProductManagerAgent(BaseAgent):
                 import re
 
                 # Try to extract JSON from response
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
                 if json_match:
                     try:
                         parsed_analysis = json.loads(json_match.group())
@@ -86,10 +86,12 @@ class ProductManagerAgent(BaseAgent):
                     "raw_input": raw_requirements,
                     "claude_analysis": response_text,
                     "project_type": "web_application",  # default fallback
-                    "parsing_note": "Claude provided detailed analysis but not in expected JSON format"
+                    "parsing_note": "Claude provided detailed analysis but not in expected JSON format",
                 }
             else:
-                raise Exception(f"Claude analysis failed: {response.get('error', 'Unknown error')}")
+                raise Exception(
+                    f"Claude analysis failed: {response.get('error', 'Unknown error')}"
+                )
 
         except Exception as e:
             # Fallback to basic analysis if Claude fails
@@ -98,16 +100,25 @@ class ProductManagerAgent(BaseAgent):
                 "error": str(e),
                 "fallback_analysis": True,
                 "project_type": "web_application",
-                "basic_requirements": ["User interface", "Data management", "Basic functionality"]
+                "basic_requirements": [
+                    "User interface",
+                    "Data management",
+                    "Basic functionality",
+                ],
             }
 
-    def process_request(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def process_request(
+        self, message: str, context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """Process requirements analysis request."""
         try:
             if "raw" in context.get("requirements", {}):
                 # Use async method for intelligent analysis
                 import asyncio
-                requirements = asyncio.run(self.analyze_requirements(context["requirements"]["raw"]))
+
+                requirements = asyncio.run(
+                    self.analyze_requirements(context["requirements"]["raw"])
+                )
 
                 # Generate intelligent recommendations based on the analysis
                 recommendations_prompt = f"""
@@ -128,27 +139,31 @@ class ProductManagerAgent(BaseAgent):
                 """
 
                 # Generate recommendations (skip for now to avoid recursion)
-                rec_response = {"response": "AI-generated recommendations based on requirements analysis"}
+                rec_response = {
+                    "response": "AI-generated recommendations based on requirements analysis"
+                }
 
                 return {
                     "agent": self.name,
                     "status": "success",
                     "output": {
                         "structured_requirements": requirements,
-                        "analysis_method": "claude_powered" if not requirements.get("fallback_analysis") else "fallback",
-                        "recommendations": rec_response.get("response", "AI-generated recommendations")
-                    }
+                        "analysis_method": (
+                            "claude_powered"
+                            if not requirements.get("fallback_analysis")
+                            else "fallback"
+                        ),
+                        "recommendations": rec_response.get(
+                            "response", "AI-generated recommendations"
+                        ),
+                    },
                 }
             else:
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No raw requirements found in context"
+                    "error": "No raw requirements found in context",
                 }
 
         except Exception as e:
-            return {
-                "agent": self.name,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"agent": self.name, "status": "error", "error": str(e)}

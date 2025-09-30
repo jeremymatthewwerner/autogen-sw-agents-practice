@@ -334,3 +334,4 @@ This is an active development project demonstrating:
 - Automated software development workflow
 - Intelligent agent communication
 - Cloud-ready deployment architecture
+- always add unit tets when adding any new functionality, and if it effects the user experience add an e2e test for it's a siginficiant change

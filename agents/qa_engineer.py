@@ -13,14 +13,16 @@ class QAEngineerAgent(BaseAgent):
         super().__init__(
             name="QAEngineer",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
-    async def generate_tests(self, backend_code: Dict[str, Any], requirements: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_tests(
+        self, backend_code: Dict[str, Any], requirements: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate comprehensive tests using Claude."""
 
-        user_stories = requirements.get('user_stories', [])
-        functional_requirements = requirements.get('functional_requirements', [])
+        user_stories = requirements.get("user_stories", [])
+        functional_requirements = requirements.get("functional_requirements", [])
 
         test_generation_prompt = f"""
         As a Senior QA Engineer, create comprehensive test suites for this backend application.
@@ -76,7 +78,7 @@ class QAEngineerAgent(BaseAgent):
                     "generation_method": "claude_powered",
                     "coverage_target": "80%+",
                     "test_types": ["unit", "integration", "api"],
-                    "user_stories_covered": len(user_stories)
+                    "user_stories_covered": len(user_stories),
                 }
             else:
                 raise Exception(f"Test generation failed: {response.get('error')}")
@@ -91,39 +93,42 @@ def test_api_health():
     # Basic health check test
     assert True  # Placeholder for generated tests
 """,
-                "pytest.ini": "[tool:pytest]\ntestpaths = tests"
+                "pytest.ini": "[tool:pytest]\ntestpaths = tests",
             }
 
             return {
                 "error": str(e),
                 "fallback_tests": True,
                 "basic_files": basic_tests,
-                "generation_method": "fallback_template"
+                "generation_method": "fallback_template",
             }
 
     def process_request(self, message: str, context=None):
         """Generate tests for the application."""
         try:
             # Get backend code and requirements from context
-            backend_code = context.get("dependency_Implement Backend", {}).get("output", {})
-            requirements = context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {})
+            backend_code = context.get("dependency_Implement Backend", {}).get(
+                "output", {}
+            )
+            requirements = (
+                context.get("dependency_Analyze Requirements", {})
+                .get("output", {})
+                .get("structured_requirements", {})
+            )
 
             if not backend_code and not requirements:
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No backend code or requirements found in context"
+                    "error": "No backend code or requirements found in context",
                 }
 
             # Generate intelligent tests
             import asyncio
+
             test_result = asyncio.run(self.generate_tests(backend_code, requirements))
 
-            return {
-                "agent": self.name,
-                "status": "success",
-                "output": test_result
-            }
+            return {"agent": self.name, "status": "success", "output": test_result}
 
         except Exception as e:
             return {"agent": self.name, "status": "error", "error": str(e)}

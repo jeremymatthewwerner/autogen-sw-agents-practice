@@ -13,16 +13,18 @@ class BackendDeveloperAgent(BaseAgent):
         super().__init__(
             name="BackendDeveloper",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
-    async def generate_backend_code(self, architecture: Dict[str, Any], requirements: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_backend_code(
+        self, architecture: Dict[str, Any], requirements: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate backend code based on architecture and requirements using Claude."""
 
         # Extract key information for code generation
-        project_type = requirements.get('project_type', 'web_application')
-        user_stories = requirements.get('user_stories', [])
-        functional_requirements = requirements.get('functional_requirements', [])
+        project_type = requirements.get("project_type", "web_application")
+        user_stories = requirements.get("user_stories", [])
+        functional_requirements = requirements.get("functional_requirements", [])
 
         code_generation_prompt = f"""
         As a Senior Backend Developer, generate production-ready Python code for this project.
@@ -82,7 +84,7 @@ class BackendDeveloperAgent(BaseAgent):
                     "based_on_architecture": True,
                     "requirements_implemented": len(user_stories),
                     "code_language": "Python",
-                    "framework": "FastAPI"
+                    "framework": "FastAPI",
                 }
             else:
                 raise Exception(f"Code generation failed: {response.get('error')}")
@@ -105,39 +107,46 @@ async def root():
 async def health():
     return {"status": "healthy"}
 """,
-                "requirements.txt": "fastapi==0.104.1\nuvicorn[standard]==0.24.0"
+                "requirements.txt": "fastapi==0.104.1\nuvicorn[standard]==0.24.0",
             }
 
             return {
                 "error": str(e),
                 "fallback_code": True,
                 "basic_files": basic_code,
-                "generation_method": "fallback_template"
+                "generation_method": "fallback_template",
             }
 
     def process_request(self, message: str, context=None):
         """Generate backend code based on architecture."""
         try:
             # Get architecture and requirements from context
-            architecture = context.get("dependency_Design Architecture", {}).get("output", {}).get("architecture", {})
-            requirements = context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {})
+            architecture = (
+                context.get("dependency_Design Architecture", {})
+                .get("output", {})
+                .get("architecture", {})
+            )
+            requirements = (
+                context.get("dependency_Analyze Requirements", {})
+                .get("output", {})
+                .get("structured_requirements", {})
+            )
 
             if not architecture and not requirements:
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No architecture or requirements found in context"
+                    "error": "No architecture or requirements found in context",
                 }
 
             # Generate intelligent backend code
             import asyncio
-            code_result = asyncio.run(self.generate_backend_code(architecture, requirements))
 
-            return {
-                "agent": self.name,
-                "status": "success",
-                "output": code_result
-            }
+            code_result = asyncio.run(
+                self.generate_backend_code(architecture, requirements)
+            )
+
+            return {"agent": self.name, "status": "success", "output": code_result}
 
         except Exception as e:
             return {"agent": self.name, "status": "error", "error": str(e)}

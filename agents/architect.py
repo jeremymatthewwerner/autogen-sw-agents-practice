@@ -16,7 +16,7 @@ class ArchitectAgent(BaseAgent):
         super().__init__(
             name="Architect",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
     async def create_architecture(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
@@ -58,10 +58,10 @@ class ArchitectAgent(BaseAgent):
                     "design_method": "claude_powered",
                     "based_on_requirements": True,
                     "requirements_summary": {
-                        "project_type": requirements.get('project_type'),
-                        "complexity": requirements.get('estimated_complexity'),
-                        "feature_count": len(requirements.get('user_stories', []))
-                    }
+                        "project_type": requirements.get("project_type"),
+                        "complexity": requirements.get("estimated_complexity"),
+                        "feature_count": len(requirements.get("user_stories", [])),
+                    },
                 }
             else:
                 raise Exception(f"Architecture design failed: {response.get('error')}")
@@ -74,24 +74,31 @@ class ArchitectAgent(BaseAgent):
                 "basic_stack": {
                     "backend": "FastAPI",
                     "database": "PostgreSQL",
-                    "deployment": "Docker"
-                }
+                    "deployment": "Docker",
+                },
             }
 
-    def process_request(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def process_request(
+        self, message: str, context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """Process architecture design request."""
         try:
-            requirements = context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {})
+            requirements = (
+                context.get("dependency_Analyze Requirements", {})
+                .get("output", {})
+                .get("structured_requirements", {})
+            )
 
             if not requirements:
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No structured requirements found in context"
+                    "error": "No structured requirements found in context",
                 }
 
             # Use Claude-powered architecture design
             import asyncio
+
             architecture = asyncio.run(self.create_architecture(requirements))
 
             return {
@@ -99,15 +106,15 @@ class ArchitectAgent(BaseAgent):
                 "status": "success",
                 "output": {
                     "architecture": architecture,
-                    "design_method": architecture.get("design_method", "claude_powered"),
-                    "based_on_requirements": architecture.get("based_on_requirements", True),
-                    "requirements_used": architecture.get("requirements_summary", {})
-                }
+                    "design_method": architecture.get(
+                        "design_method", "claude_powered"
+                    ),
+                    "based_on_requirements": architecture.get(
+                        "based_on_requirements", True
+                    ),
+                    "requirements_used": architecture.get("requirements_summary", {}),
+                },
             }
 
         except Exception as e:
-            return {
-                "agent": self.name,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"agent": self.name, "status": "error", "error": str(e)}

@@ -10,6 +10,7 @@ import os
 
 class TaskStatus(Enum):
     """Status of a development task."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     BLOCKED = "blocked"
@@ -20,6 +21,7 @@ class TaskStatus(Enum):
 
 class ProjectPhase(Enum):
     """Current phase of the project."""
+
     REQUIREMENTS = "requirements"
     DESIGN = "design"
     IMPLEMENTATION = "implementation"
@@ -31,6 +33,7 @@ class ProjectPhase(Enum):
 @dataclass
 class Task:
     """Represents a development task."""
+
     id: str
     name: str
     description: str
@@ -52,15 +55,18 @@ class Task:
             "status": self.status.value,
             "dependencies": self.dependencies,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "output": self.output,
-            "error": self.error
+            "error": self.error,
         }
 
 
 @dataclass
 class ProjectState:
     """Manages the state of a software development project."""
+
     project_id: str
     project_name: str
     requirements: Dict[str, Any] = field(default_factory=dict)
@@ -75,7 +81,9 @@ class ProjectState:
         """Add a task to the project."""
         self.tasks[task.id] = task
 
-    def update_task_status(self, task_id: str, status: TaskStatus, output: Optional[Dict[str, Any]] = None) -> None:
+    def update_task_status(
+        self, task_id: str, status: TaskStatus, output: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Update the status of a task."""
         if task_id in self.tasks:
             self.tasks[task_id].status = status
@@ -86,14 +94,17 @@ class ProjectState:
 
     def get_pending_tasks(self) -> List[Task]:
         """Get all pending tasks."""
-        return [task for task in self.tasks.values() if task.status == TaskStatus.PENDING]
+        return [
+            task for task in self.tasks.values() if task.status == TaskStatus.PENDING
+        ]
 
     def get_ready_tasks(self) -> List[Task]:
         """Get tasks that are ready to execute (dependencies satisfied)."""
         ready_tasks = []
         for task in self.get_pending_tasks():
             dependencies_satisfied = all(
-                self.tasks.get(dep_id, Task("", "", "", "")).status == TaskStatus.COMPLETED
+                self.tasks.get(dep_id, Task("", "", "", "")).status
+                == TaskStatus.COMPLETED
                 for dep_id in task.dependencies
             )
             if dependencies_satisfied:
@@ -104,7 +115,7 @@ class ProjectState:
         """Add an artifact to the project."""
         self.artifacts[name] = {
             "content": content,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
 
     def update_quality_metrics(self, metrics: Dict[str, Any]) -> None:
@@ -122,19 +133,19 @@ class ProjectState:
             "phase": self.phase.value,
             "artifacts": self.artifacts,
             "quality_metrics": self.quality_metrics,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
 
     def save_to_file(self, filepath: str) -> None:
         """Save project state to a JSON file."""
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
     @classmethod
-    def load_from_file(cls, filepath: str) -> 'ProjectState':
+    def load_from_file(cls, filepath: str) -> "ProjectState":
         """Load project state from a JSON file."""
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         # Reconstruct the project state
@@ -145,7 +156,7 @@ class ProjectState:
             architecture=data["architecture"],
             phase=ProjectPhase(data["phase"]),
             artifacts=data["artifacts"],
-            quality_metrics=data["quality_metrics"]
+            quality_metrics=data["quality_metrics"],
         )
 
         # Reconstruct tasks
@@ -158,7 +169,7 @@ class ProjectState:
                 status=TaskStatus(task_data["status"]),
                 dependencies=task_data["dependencies"],
                 output=task_data.get("output"),
-                error=task_data.get("error")
+                error=task_data.get("error"),
             )
             state.tasks[task_id] = task
 

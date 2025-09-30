@@ -25,33 +25,42 @@ async def test_different_requirements():
     """
 
     try:
-        result = system.develop_application("E-commerce Platform", ecommerce_requirements)
+        result = system.develop_application(
+            "E-commerce Platform", ecommerce_requirements
+        )
         print(f"E-commerce project status: {result}")
 
         # Check if the system generated different responses
-        project_id = result['project_id']
+        project_id = result["project_id"]
         project_state = system.orchestrator.project_states[project_id]
 
         # Examine the product manager output
         for task_id, task in project_state.tasks.items():
             if task.name == "Analyze Requirements" and task.output:
-                requirements_analysis = task.output.get('output', {}).get('structured_requirements', {})
-                print(f"\nProject Type Detected: {requirements_analysis.get('project_type', 'Unknown')}")
-                print(f"Complexity Assessed: {requirements_analysis.get('estimated_complexity', 'Unknown')}")
-                print(f"Number of User Stories: {len(requirements_analysis.get('user_stories', []))}")
+                requirements_analysis = task.output.get("output", {}).get(
+                    "structured_requirements", {}
+                )
+                print(
+                    f"\nProject Type Detected: {requirements_analysis.get('project_type', 'Unknown')}"
+                )
+                print(
+                    f"Complexity Assessed: {requirements_analysis.get('estimated_complexity', 'Unknown')}"
+                )
+                print(
+                    f"Number of User Stories: {len(requirements_analysis.get('user_stories', []))}"
+                )
 
                 # Print a few user stories to see if they're relevant
-                user_stories = requirements_analysis.get('user_stories', [])
+                user_stories = requirements_analysis.get("user_stories", [])
                 if user_stories:
                     print(f"Sample User Story: {user_stories[0].get('title', 'N/A')}")
 
                 break
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         print(f"Error testing e-commerce requirements: {e}")
-
 
     # Test 2: Data Analytics Dashboard (very different domain)
     print("\n=== Test 2: Data Analytics Dashboard ===")
@@ -69,27 +78,37 @@ async def test_different_requirements():
     """
 
     try:
-        result2 = system.develop_application("Analytics Dashboard", analytics_requirements)
+        result2 = system.develop_application(
+            "Analytics Dashboard", analytics_requirements
+        )
         print(f"Analytics project status: {result2}")
 
         # Check if this generated different responses too
-        project_id2 = result2['project_id']
+        project_id2 = result2["project_id"]
         project_state2 = system.orchestrator.project_states[project_id2]
 
         for task_id, task in project_state2.tasks.items():
             if task.name == "Analyze Requirements" and task.output:
-                requirements_analysis2 = task.output.get('output', {}).get('structured_requirements', {})
-                print(f"\nProject Type Detected: {requirements_analysis2.get('project_type', 'Unknown')}")
-                print(f"Complexity Assessed: {requirements_analysis2.get('estimated_complexity', 'Unknown')}")
-                print(f"Number of User Stories: {len(requirements_analysis2.get('user_stories', []))}")
+                requirements_analysis2 = task.output.get("output", {}).get(
+                    "structured_requirements", {}
+                )
+                print(
+                    f"\nProject Type Detected: {requirements_analysis2.get('project_type', 'Unknown')}"
+                )
+                print(
+                    f"Complexity Assessed: {requirements_analysis2.get('estimated_complexity', 'Unknown')}"
+                )
+                print(
+                    f"Number of User Stories: {len(requirements_analysis2.get('user_stories', []))}"
+                )
 
-                user_stories2 = requirements_analysis2.get('user_stories', [])
+                user_stories2 = requirements_analysis2.get("user_stories", [])
                 if user_stories2:
                     print(f"Sample User Story: {user_stories2[0].get('title', 'N/A')}")
 
                 break
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         print(f"Error testing analytics requirements: {e}")

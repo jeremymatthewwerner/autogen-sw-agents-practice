@@ -21,15 +21,14 @@ async def test_claude_integration():
     try:
         # Test async version
         result = await pm_agent.process_request_async(
-            "Analyze these requirements and create structured specifications",
-            context
+            "Analyze these requirements and create structured specifications", context
         )
 
         print(f"Agent: {result['agent']}")
         print(f"Status: {result['status']}")
         print(f"Response preview: {result['response'][:200]}...")
 
-        return result['status'] == 'success'
+        return result["status"] == "success"
 
     except Exception as e:
         print(f"Error testing Claude integration: {e}")
@@ -42,20 +41,13 @@ def test_sync_integration():
 
     pm_agent = ProductManagerAgent()
 
-    context = {
-        "requirements": {
-            "raw": "Build a simple todo app"
-        }
-    }
+    context = {"requirements": {"raw": "Build a simple todo app"}}
 
     try:
-        result = pm_agent.process_request(
-            "Analyze these requirements briefly",
-            context
-        )
+        result = pm_agent.process_request("Analyze these requirements briefly", context)
 
         print(f"Sync test - Agent: {result['agent']}, Status: {result['status']}")
-        return result['status'] == 'success'
+        return result["status"] == "success"
 
     except Exception as e:
         print(f"Error in sync test: {e}")

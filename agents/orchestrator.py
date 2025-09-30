@@ -21,7 +21,7 @@ class OrchestratorAgent(BaseAgent):
         super().__init__(
             name="Orchestrator",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
         self.project_states: Dict[str, ProjectState] = {}
         self.agent_registry: Dict[str, BaseAgent] = {}
@@ -37,7 +37,7 @@ class OrchestratorAgent(BaseAgent):
         project_state = ProjectState(
             project_id=project_id,
             project_name=project_name,
-            requirements={"raw": requirements}
+            requirements={"raw": requirements},
         )
         self.project_states[project_id] = project_state
         logger.info(f"Created project: {project_name} (ID: {project_id})")
@@ -53,68 +53,80 @@ class OrchestratorAgent(BaseAgent):
 
         # Phase 1: Requirements Analysis
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Analyze Requirements",
-            description="Convert natural language requirements to structured specifications",
-            assigned_to="ProductManager",
-            dependencies=[]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Analyze Requirements",
+                description="Convert natural language requirements to structured specifications",
+                assigned_to="ProductManager",
+                dependencies=[],
+            )
+        )
         requirements_task_id = task_id
 
         # Phase 2: System Design
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Design Architecture",
-            description="Create system architecture and technical design",
-            assigned_to="Architect",
-            dependencies=[requirements_task_id]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Design Architecture",
+                description="Create system architecture and technical design",
+                assigned_to="Architect",
+                dependencies=[requirements_task_id],
+            )
+        )
         architecture_task_id = task_id
 
         # Phase 3: Implementation
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Implement Backend",
-            description="Develop backend APIs and business logic",
-            assigned_to="BackendDeveloper",
-            dependencies=[architecture_task_id]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Implement Backend",
+                description="Develop backend APIs and business logic",
+                assigned_to="BackendDeveloper",
+                dependencies=[architecture_task_id],
+            )
+        )
         backend_task_id = task_id
 
         # Phase 4: Testing
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Write Tests",
-            description="Create unit and integration tests",
-            assigned_to="QAEngineer",
-            dependencies=[backend_task_id]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Write Tests",
+                description="Create unit and integration tests",
+                assigned_to="QAEngineer",
+                dependencies=[backend_task_id],
+            )
+        )
         testing_task_id = task_id
 
         # Phase 5: Deployment Preparation
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Prepare Deployment",
-            description="Setup CI/CD and deployment configuration",
-            assigned_to="DevOpsEngineer",
-            dependencies=[testing_task_id]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Prepare Deployment",
+                description="Setup CI/CD and deployment configuration",
+                assigned_to="DevOpsEngineer",
+                dependencies=[testing_task_id],
+            )
+        )
         deployment_task_id = task_id
 
         # Phase 6: User Documentation
         task_id = str(uuid.uuid4())
-        tasks.append(Task(
-            id=task_id,
-            name="Create User Documentation",
-            description="Generate comprehensive end-user documentation including README, user guide, API docs, and FAQ",
-            assigned_to="DocumentationAgent",
-            dependencies=[deployment_task_id]
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                name="Create User Documentation",
+                description="Generate comprehensive end-user documentation including README, user guide, API docs, and FAQ",
+                assigned_to="DocumentationAgent",
+                dependencies=[deployment_task_id],
+            )
+        )
 
         # Add tasks to project state
         for task in tasks:
@@ -154,7 +166,7 @@ class OrchestratorAgent(BaseAgent):
                     "project_name": project.project_name,
                     "task_name": task.name,
                     "requirements": project.requirements,
-                    "architecture": project.architecture
+                    "architecture": project.architecture,
                 }
 
                 # Get outputs from dependent tasks
@@ -184,12 +196,14 @@ class OrchestratorAgent(BaseAgent):
                 project.update_task_status(task.id, TaskStatus.FAILED)
                 agent.status = "error"
                 agent.current_task = f"Error: {str(e)[:50]}..."
-                results.append({
-                    "agent": task.assigned_to,
-                    "task": task.name,
-                    "status": "error",
-                    "error": str(e)
-                })
+                results.append(
+                    {
+                        "agent": task.assigned_to,
+                        "task": task.name,
+                        "status": "error",
+                        "error": str(e),
+                    }
+                )
 
         return results
 
@@ -201,12 +215,7 @@ class OrchestratorAgent(BaseAgent):
         project = self.project_states[project_id]
 
         # Count task statuses
-        status_counts = {
-            "pending": 0,
-            "in_progress": 0,
-            "completed": 0,
-            "failed": 0
-        }
+        status_counts = {"pending": 0, "in_progress": 0, "completed": 0, "failed": 0}
 
         for task in project.tasks.values():
             status_counts[task.status.value] += 1
@@ -217,7 +226,11 @@ class OrchestratorAgent(BaseAgent):
             "phase": project.phase.value,
             "task_summary": status_counts,
             "total_tasks": len(project.tasks),
-            "progress_percentage": (status_counts["completed"] / len(project.tasks) * 100) if project.tasks else 0
+            "progress_percentage": (
+                (status_counts["completed"] / len(project.tasks) * 100)
+                if project.tasks
+                else 0
+            ),
         }
 
     def coordinate_agents(self, project_id: str) -> bool:

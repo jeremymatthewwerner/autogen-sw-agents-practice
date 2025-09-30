@@ -32,7 +32,7 @@ class MultiAgentSystem:
             "BackendDeveloper": BackendDeveloperAgent(),
             "QAEngineer": QAEngineerAgent(),
             "DevOpsEngineer": DevOpsEngineerAgent(),
-            "DocumentationAgent": DocumentationAgent()
+            "DocumentationAgent": DocumentationAgent(),
         }
 
         for name, agent in agents.items():
@@ -61,12 +61,14 @@ class MultiAgentSystem:
             logger.error("Project failed")
             return None
 
-    async def process_development_request(self, task_description: str, requirements: dict):
+    async def process_development_request(
+        self, task_description: str, requirements: dict
+    ):
         """Process a development request from the API."""
         logger.info(f"Processing development request: {task_description}")
 
         # Create project and start agent coordination in background
-        project_name = requirements.get('project_type', 'web_app')
+        project_name = requirements.get("project_type", "web_app")
         project_id = self.orchestrator.create_project(project_name, task_description)
 
         # Start the development process in a background thread
@@ -96,7 +98,7 @@ class MultiAgentSystem:
             "status": "started",
             "project_id": project_id,
             "result": f"Development project '{project_name}' initiated. Agents are now coordinating to complete the request.",
-            "agents_involved": list(self.orchestrator.agents.keys())
+            "agents_involved": list(self.orchestrator.agents.keys()),
         }
 
     async def get_system_status(self):
@@ -106,25 +108,27 @@ class MultiAgentSystem:
         # Get real agent statuses from orchestrator
         agent_statuses = []
         for name, agent in self.orchestrator.agent_registry.items():
-            status = getattr(agent, 'status', 'ready')
-            current_task = getattr(agent, 'current_task', '')
+            status = getattr(agent, "status", "ready")
+            current_task = getattr(agent, "current_task", "")
 
-            agent_statuses.append({
-                "name": name,
-                "status": status,
-                "current_task": current_task
-            })
+            agent_statuses.append(
+                {"name": name, "status": status, "current_task": current_task}
+            )
 
         # Determine overall system status
-        working_agents = [a for a in agent_statuses if a['status'] == 'working']
+        working_agents = [a for a in agent_statuses if a["status"] == "working"]
         overall_status = "active" if working_agents else "ready"
-        current_task = f"{len(working_agents)} agents working" if working_agents else "System ready for development requests"
+        current_task = (
+            f"{len(working_agents)} agents working"
+            if working_agents
+            else "System ready for development requests"
+        )
 
         return {
             "status": overall_status,
             "agents_active": len(agent_statuses),
             "current_task": current_task,
-            "agents": agent_statuses
+            "agents": agent_statuses,
         }
 
 

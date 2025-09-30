@@ -12,6 +12,7 @@ from multi_agent_system import MultiAgentSystem
 # Load environment variables
 load_dotenv()
 
+
 def test_system_locally():
     """Test the multi-agent system with a simple request."""
 
@@ -61,12 +62,16 @@ def test_system_locally():
             # Display project results
             if isinstance(result, dict):
                 for key, value in result.items():
-                    if key == 'tasks':
-                        print(f"\nTasks created: {len(value) if isinstance(value, list) else 'N/A'}")
+                    if key == "tasks":
+                        print(
+                            f"\nTasks created: {len(value) if isinstance(value, list) else 'N/A'}"
+                        )
                         if isinstance(value, list) and value:
                             for task in value[:3]:  # Show first 3 tasks
                                 if isinstance(task, dict):
-                                    print(f"  - {task.get('name', 'Unknown task')}: {task.get('status', 'pending')}")
+                                    print(
+                                        f"  - {task.get('name', 'Unknown task')}: {task.get('status', 'pending')}"
+                                    )
                     else:
                         value_str = str(value)
                         if len(value_str) > 100:
@@ -85,6 +90,7 @@ def test_system_locally():
     except Exception as e:
         print(f"\n❌ Error during processing: {e}")
         return False
+
 
 if __name__ == "__main__":
     # Run the test

@@ -13,15 +13,20 @@ class DevOpsEngineerAgent(BaseAgent):
         super().__init__(
             name="DevOpsEngineer",
             system_prompt=config["system_prompt"],
-            llm_config=config["llm_config"]
+            llm_config=config["llm_config"],
         )
 
-    async def generate_deployment_config(self, backend_code: Dict[str, Any], architecture: Dict[str, Any], requirements: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_deployment_config(
+        self,
+        backend_code: Dict[str, Any],
+        architecture: Dict[str, Any],
+        requirements: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Generate deployment configuration using Claude."""
 
-        project_type = requirements.get('project_type', 'web_application')
-        complexity = requirements.get('estimated_complexity', 'Medium')
-        non_functional_reqs = requirements.get('non_functional_requirements', {})
+        project_type = requirements.get("project_type", "web_application")
+        complexity = requirements.get("estimated_complexity", "Medium")
+        non_functional_reqs = requirements.get("non_functional_requirements", {})
 
         deployment_prompt = f"""
         As a Senior DevOps Engineer, create production-ready deployment configurations for this application.
@@ -91,11 +96,13 @@ class DevOpsEngineerAgent(BaseAgent):
                     "generation_method": "claude_powered",
                     "deployment_type": "containerized",
                     "scalability": complexity,
-                    "security_level": non_functional_reqs.get('security', 'basic'),
-                    "ready_for_production": True
+                    "security_level": non_functional_reqs.get("security", "basic"),
+                    "ready_for_production": True,
                 }
             else:
-                raise Exception(f"Deployment configuration failed: {response.get('error')}")
+                raise Exception(
+                    f"Deployment configuration failed: {response.get('error')}"
+                )
 
         except Exception as e:
             # Fallback basic config
@@ -111,39 +118,54 @@ services:
 """,
                 ".env.example": """DATABASE_URL=sqlite:///./app.db
 SECRET_KEY=change-me-in-production
-"""
+""",
             }
 
             return {
                 "error": str(e),
                 "fallback_config": True,
                 "basic_files": basic_config,
-                "generation_method": "fallback_template"
+                "generation_method": "fallback_template",
             }
 
     def process_request(self, message: str, context=None):
         """Generate deployment configuration."""
         try:
             # Get inputs from context
-            backend_code = context.get("dependency_Implement Backend", {}).get("output", {})
-            architecture = context.get("dependency_Design Architecture", {}).get("output", {}).get("architecture", {})
-            requirements = context.get("dependency_Analyze Requirements", {}).get("output", {}).get("structured_requirements", {})
+            backend_code = context.get("dependency_Implement Backend", {}).get(
+                "output", {}
+            )
+            architecture = (
+                context.get("dependency_Design Architecture", {})
+                .get("output", {})
+                .get("architecture", {})
+            )
+            requirements = (
+                context.get("dependency_Analyze Requirements", {})
+                .get("output", {})
+                .get("structured_requirements", {})
+            )
 
             if not any([backend_code, architecture, requirements]):
                 return {
                     "agent": self.name,
                     "status": "error",
-                    "error": "No backend code, architecture, or requirements found in context"
+                    "error": "No backend code, architecture, or requirements found in context",
                 }
 
             # Generate intelligent deployment configuration
             import asyncio
-            deployment_result = asyncio.run(self.generate_deployment_config(backend_code, architecture, requirements))
+
+            deployment_result = asyncio.run(
+                self.generate_deployment_config(
+                    backend_code, architecture, requirements
+                )
+            )
 
             return {
                 "agent": self.name,
                 "status": "success",
-                "output": deployment_result
+                "output": deployment_result,
             }
 
         except Exception as e:
