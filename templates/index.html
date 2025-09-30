@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Software Development System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .agent-status {
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #48bb78;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .agent-status.active {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .agent-status.busy {
+            border-left-color: #ed8936;
+            background: #fffaf0;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #48bb78;
+        }
+
+        .status-indicator.busy {
+            background: #ed8936;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .result-status.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .result-status.processing {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> Multi-Agent Development System</h1>
+            <p>AI-powered software development with intelligent agent collaboration</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Agent Status</h2>
+                <div class="status-grid" id="agentStatus">
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">Product Manager</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">Frontend Engineer</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">Backend Engineer</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">Database Engineer</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">DevOps Engineer</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">QA Engineer</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                    <div class="agent-status active">
+                        <div class="status-indicator"></div>
+                        <div>
+                            <div style="font-weight: 500;">Tech Lead</div>
+                            <div style="font-size: 12px; color: #718096;">Ready</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-code"></i> New Development Request</h2>
+                <form id="developmentForm">
+                    <div class="form-group">
+                        <label for="taskDescription">Project Description</label>
+                        <textarea
+                            id="taskDescription"
+                            rows="4"
+                            placeholder="Describe the software you want to build. Be as detailed as possible about features, requirements, and preferences..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectType">Project Type</label>
+                        <select id="projectType">
+                            <option value="web_app">Web Application</option>
+                            <option value="mobile_app">Mobile App</option>
+                            <option value="api">REST API</option>
+                            <option value="desktop">Desktop Application</option>
+                            <option value="microservice">Microservice</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority Level</label>
+                        <select id="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn" id="submitBtn">
+                        <i class="fas fa-rocket"></i> Start Development
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Agents are collaborating on your project...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card results" id="resultsSection" style="display: none;">
+            <h2><i class="fas fa-history"></i> Development Results</h2>
+            <div id="resultsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let taskCounter = 0;
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                updateAgentStatus(data);
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        function updateAgentStatus(data) {
+            const agentElements = document.querySelectorAll('.agent-status');
+            agentElements.forEach((element, index) => {
+                const indicator = element.querySelector('.status-indicator');
+                const statusText = element.querySelector('div:last-child div:last-child');
+
+                if (data.status === 'demo_mode') {
+                    indicator.className = 'status-indicator';
+                    statusText.textContent = 'Ready';
+                    element.className = 'agent-status active';
+                } else {
+                    indicator.className = 'status-indicator busy';
+                    statusText.textContent = 'Working';
+                    element.className = 'agent-status busy';
+                }
+            });
+        }
+
+        async function submitDevelopmentRequest(taskDescription, projectType, priority) {
+            const loading = document.getElementById('loading');
+            const submitBtn = document.getElementById('submitBtn');
+
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/develop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_description: taskDescription,
+                        requirements: {
+                            project_type: projectType,
+                            priority: priority
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                addResult(taskDescription, result, projectType, priority);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addResult(taskDescription, { status: 'error', result: 'Failed to process request' }, projectType, priority);
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        }
+
+        function addResult(task, result, projectType, priority) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsList = document.getElementById('resultsList');
+
+            taskCounter++;
+
+            const resultItem = document.createElement('div');
+            resultItem.className = 'result-item';
+            resultItem.innerHTML = `
+                <div class="result-header">
+                    <h3>Task #${taskCounter}: ${projectType.replace('_', ' ').toUpperCase()}</h3>
+                    <span class="result-status ${result.status === 'demo_mode' ? 'completed' : 'processing'}">
+                        ${result.status === 'demo_mode' ? 'Demo Mode' : result.status}
+                    </span>
+                </div>
+                <p><strong>Request:</strong> ${task}</p>
+                <p><strong>Priority:</strong> ${priority}</p>
+                <p><strong>Result:</strong> ${result.result || result.message}</p>
+                <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+            `;
+
+            resultsList.insertBefore(resultItem, resultsList.firstChild);
+            resultsSection.style.display = 'block';
+        }
+
+        document.getElementById('developmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const taskDescription = document.getElementById('taskDescription').value;
+            const projectType = document.getElementById('projectType').value;
+            const priority = document.getElementById('priority').value;
+
+            if (taskDescription.trim()) {
+                await submitDevelopmentRequest(taskDescription, projectType, priority);
+                document.getElementById('taskDescription').value = '';
+            }
+        });
+
+        // Fetch initial status and set up periodic updates
+        fetchStatus();
+        setInterval(fetchStatus, 5000); // Update every 5 seconds
+    </script>
+</body>
+</html>
