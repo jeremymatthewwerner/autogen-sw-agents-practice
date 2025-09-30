@@ -43,3 +43,10 @@ htmlcov/
 # Cache
 .cache/
 *.cache
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+.terraform.lock.hcl
