@@ -1,6 +1,10 @@
 """Main multi-agent system entry point."""
 
 import logging
+import asyncio
+import threading
+from typing import Dict, Any, Optional
+from datetime import datetime
 from agents.orchestrator import OrchestratorAgent
 from agents.product_manager import ProductManagerAgent
 from agents.architect import ArchitectAgent
@@ -8,6 +12,7 @@ from agents.backend_developer import BackendDeveloperAgent
 from agents.qa_engineer import QAEngineerAgent
 from agents.devops_engineer import DevOpsEngineerAgent
 from agents.documentation_agent import DocumentationAgent
+from utils.project_state import TaskStatus
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,36 +65,65 @@ class MultiAgentSystem:
         """Process a development request from the API."""
         logger.info(f"Processing development request: {task_description}")
 
-        # Use the existing development method
-        result = self.develop_application(
-            project_name=requirements.get('project_type', 'web_app'),
-            requirements=task_description
-        )
+        # Create project and start agent coordination in background
+        project_name = requirements.get('project_type', 'web_app')
+        project_id = self.orchestrator.create_project(project_name, task_description)
+
+        # Start the development process in a background thread
+        def run_development():
+            try:
+                # Plan tasks
+                tasks = self.orchestrator.plan_project(project_id)
+                logger.info(f"Created {len(tasks)} tasks for project {project_id}")
+
+                # Execute project with real agent coordination
+                success = self.orchestrator.coordinate_agents(project_id)
+
+                if success:
+                    logger.info(f"Project {project_id} completed successfully")
+                else:
+                    logger.error(f"Project {project_id} failed")
+
+            except Exception as e:
+                logger.error(f"Error in development process: {e}")
+
+        # Start development in background thread
+        development_thread = threading.Thread(target=run_development)
+        development_thread.daemon = True
+        development_thread.start()
 
         return {
-            "status": "completed",
-            "result": result or "Development process completed",
-            "agents_involved": list(self.orchestrator.agents.keys()) if hasattr(self.orchestrator, 'agents') else []
+            "status": "started",
+            "project_id": project_id,
+            "result": f"Development project '{project_name}' initiated. Agents are now coordinating to complete the request.",
+            "agents_involved": list(self.orchestrator.agents.keys())
         }
 
     async def get_system_status(self):
         """Get the current status of all agents in the system."""
         logger.info("Getting system status")
 
-        # Mock agent statuses for now - in a real system these would be dynamic
-        agent_statuses = [
-            {"name": "Product Manager", "status": "ready", "current_task": "Planning features"},
-            {"name": "Architect", "status": "idle", "current_task": ""},
-            {"name": "Backend Developer", "status": "working", "current_task": "Building API"},
-            {"name": "QA Engineer", "status": "ready", "current_task": "Test planning"},
-            {"name": "DevOps Engineer", "status": "working", "current_task": "AWS deployment"},
-            {"name": "Documentation Agent", "status": "ready", "current_task": "Writing docs"}
-        ]
+        # Get real agent statuses from orchestrator
+        agent_statuses = []
+        for name, agent in self.orchestrator.agent_registry.items():
+            status = getattr(agent, 'status', 'ready')
+            current_task = getattr(agent, 'current_task', '')
+
+            agent_statuses.append({
+                "name": name,
+                "status": status,
+                "current_task": current_task
+            })
+
+        # Determine overall system status
+        working_agents = [a for a in agent_statuses if a['status'] == 'working']
+        overall_status = "active" if working_agents else "ready"
+        current_task = f"{len(working_agents)} agents working" if working_agents else "System ready for development requests"
 
         return {
-            "status": "active",
+            "status": overall_status,
             "agents_active": len(agent_statuses),
-            "current_task": "System ready for development requests",
+            "current_task": current_task,
             "agents": agent_statuses
         }
 

@@ -144,7 +144,9 @@ class OrchestratorAgent(BaseAgent):
                 continue
 
             try:
-                # Execute the task
+                # Update agent status to working
+                agent.status = "working"
+                agent.current_task = task.name
                 logger.info(f"Executing task: {task.name} with {task.assigned_to}")
 
                 # Prepare context for the agent
@@ -166,9 +168,13 @@ class OrchestratorAgent(BaseAgent):
 
                 if result["status"] == "success":
                     project.update_task_status(task.id, TaskStatus.COMPLETED, result)
+                    agent.status = "ready"
+                    agent.current_task = ""
                     logger.info(f"Task completed: {task.name}")
                 else:
                     project.update_task_status(task.id, TaskStatus.FAILED)
+                    agent.status = "error"
+                    agent.current_task = f"Failed: {task.name}"
                     logger.error(f"Task failed: {task.name}")
 
                 results.append(result)
@@ -176,6 +182,8 @@ class OrchestratorAgent(BaseAgent):
             except Exception as e:
                 logger.error(f"Error executing task {task.name}: {str(e)}")
                 project.update_task_status(task.id, TaskStatus.FAILED)
+                agent.status = "error"
+                agent.current_task = f"Error: {str(e)[:50]}..."
                 results.append({
                     "agent": task.assigned_to,
                     "task": task.name,

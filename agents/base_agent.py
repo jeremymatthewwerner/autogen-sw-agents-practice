@@ -38,6 +38,11 @@ class BaseAgent:
 
         self.system_prompt = system_prompt
         self.conversation_history: List[Dict[str, Any]] = []
+
+        # Status tracking for real-time monitoring
+        self.status = "ready"  # ready, working, idle, error
+        self.current_task = ""
+
         logger.info(f"Initialized {name} agent with Claude integration")
 
     async def process_request_async(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

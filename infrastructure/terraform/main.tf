@@ -299,7 +299,7 @@ resource "aws_db_subnet_group" "multi_agent" {
 resource "aws_db_instance" "multi_agent" {
   identifier     = "${var.project_name}-database"
   engine         = "postgres"
-  engine_version = "15.4"
+  engine_version = "15.8"
   instance_class = var.db_instance_class
 
   allocated_storage     = 20
