@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create static directory for FastAPI static files
+RUN mkdir -p static
+
 # Expose port 8000 (as configured in ALB target group)
 EXPOSE 8000
 
