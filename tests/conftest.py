@@ -1,25 +1,19 @@
 """Global test configuration and fixtures."""
 
-import pytest
 import asyncio
 import os
-from unittest.mock import Mock, AsyncMock
-from agents.product_manager import ProductManagerAgent
+from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 from agents.architect import ArchitectAgent
 from agents.backend_developer import BackendDeveloperAgent
-from agents.qa_engineer import QAEngineerAgent
 from agents.devops_engineer import DevOpsEngineerAgent
 from agents.documentation_agent import DocumentationAgent
 from agents.orchestrator import OrchestratorAgent
+from agents.product_manager import ProductManagerAgent
+from agents.qa_engineer import QAEngineerAgent
 from multi_agent_system import MultiAgentSystem
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture

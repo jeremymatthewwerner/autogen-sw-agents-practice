@@ -1,7 +1,7 @@
 """System Architect Agent for technical design."""
 
-from typing import Dict, Any
 import json
+from typing import Any, Dict
 
 from agents.base_agent import BaseAgent
 from config.agent_config import get_agent_config

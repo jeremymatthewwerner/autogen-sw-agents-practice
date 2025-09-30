@@ -3,22 +3,23 @@ Cloud API wrapper for the Multi-Agent Software Development System.
 This provides a REST API interface for the multi-agent system to run in AWS.
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+import asyncio
+import json
+import logging
+import os
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import boto3
+import structlog
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
-import os
-import asyncio
-import logging
-import boto3
-import json
-from datetime import datetime
-import uuid
 
 from multi_agent_system import MultiAgentSystem
-from utils.project_state import ProjectState, ProjectPhase
-import structlog
+from utils.project_state import ProjectPhase, ProjectState
 
 # Configure structured logging
 structlog.configure(

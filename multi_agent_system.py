@@ -1,17 +1,18 @@
 """Main multi-agent system entry point."""
 
-import logging
 import asyncio
+import logging
 import threading
-from typing import Dict, Any, Optional
 from datetime import datetime
-from agents.orchestrator import OrchestratorAgent
-from agents.product_manager import ProductManagerAgent
+from typing import Any, Dict, Optional
+
 from agents.architect import ArchitectAgent
 from agents.backend_developer import BackendDeveloperAgent
-from agents.qa_engineer import QAEngineerAgent
 from agents.devops_engineer import DevOpsEngineerAgent
 from agents.documentation_agent import DocumentationAgent
+from agents.orchestrator import OrchestratorAgent
+from agents.product_manager import ProductManagerAgent
+from agents.qa_engineer import QAEngineerAgent
 from utils.project_state import TaskStatus
 
 logging.basicConfig(level=logging.INFO)

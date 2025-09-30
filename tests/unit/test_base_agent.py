@@ -1,8 +1,10 @@
 """Unit tests for BaseAgent functionality."""
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
 from agents.base_agent import BaseAgent
 
 

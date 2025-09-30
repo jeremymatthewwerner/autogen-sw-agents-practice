@@ -1,25 +1,32 @@
 """E2E tests for UI workflows using Playwright."""
 
-import pytest
 import asyncio
 import json
-from playwright.async_api import async_playwright, expect
 from unittest.mock import patch
+
+import pytest
+import pytest_asyncio
+from playwright.async_api import async_playwright, expect
 
 
 @pytest.mark.e2e
 class TestUIWorkflows:
     """End-to-end tests for the UI workflows."""
 
-    @pytest.fixture
-    async def browser(self):
-        """Create browser instance for testing."""
+    @pytest_asyncio.fixture(scope="function")
+    async def playwright_instance(self):
+        """Create playwright instance for testing."""
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            yield browser
-            await browser.close()
+            yield p
 
-    @pytest.fixture
+    @pytest_asyncio.fixture(scope="function")
+    async def browser(self, playwright_instance):
+        """Create browser instance for testing."""
+        browser = await playwright_instance.chromium.launch(headless=True)
+        yield browser
+        await browser.close()
+
+    @pytest_asyncio.fixture(scope="function")
     async def page(self, browser):
         """Create a new page for each test."""
         context = await browser.new_context()
@@ -27,7 +34,7 @@ class TestUIWorkflows:
         yield page
         await context.close()
 
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def app_url(self):
         """URL for the application."""
         # Use localhost for E2E tests

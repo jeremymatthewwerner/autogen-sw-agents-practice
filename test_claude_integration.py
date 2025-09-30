@@ -1,6 +1,7 @@
 """Test script to verify Claude integration works."""
 
 import asyncio
+
 from agents.product_manager import ProductManagerAgent
 
 

@@ -1,10 +1,11 @@
-from autogen_ext.models.anthropic import AnthropicChatCompletionClient
+import asyncio
+import os
+
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken
+from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from dotenv import load_dotenv
-import asyncio
-import os
 
 # Load environment variables from .env file
 load_dotenv()

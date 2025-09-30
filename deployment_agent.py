@@ -3,15 +3,16 @@ Deployment Agent - Handles automatic deployment of generated applications to AWS
 This agent works as part of the multi-agent system to deploy applications created by other agents.
 """
 
-import boto3
 import json
+import logging
 import os
 import tempfile
-import zipfile
 import time
-from typing import Dict, Any, Optional
+import zipfile
 from datetime import datetime
-import logging
+from typing import Any, Dict, Optional
+
+import boto3
 
 logger = logging.getLogger(__name__)
 

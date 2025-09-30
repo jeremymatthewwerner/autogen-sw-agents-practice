@@ -1,13 +1,13 @@
 """Orchestrator Agent for coordinating the multi-agent system."""
 
-from typing import Dict, Any, List, Optional
+import logging
 import uuid
 from datetime import datetime
-import logging
+from typing import Any, Dict, List, Optional
 
 from agents.base_agent import BaseAgent
-from utils.project_state import ProjectState, Task, TaskStatus, ProjectPhase
 from config.agent_config import get_agent_config
+from utils.project_state import ProjectPhase, ProjectState, Task, TaskStatus
 
 logger = logging.getLogger(__name__)
 

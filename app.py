@@ -1,13 +1,14 @@
-import os
 import asyncio
+import os
+from typing import Any, Dict, List
+
+import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import Dict, Any, List
-import uvicorn
-from dotenv import load_dotenv
 
 load_dotenv()
 

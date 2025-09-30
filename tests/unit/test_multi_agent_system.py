@@ -1,8 +1,10 @@
 """Unit tests for MultiAgentSystem functionality."""
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+
 from multi_agent_system import MultiAgentSystem
 
 

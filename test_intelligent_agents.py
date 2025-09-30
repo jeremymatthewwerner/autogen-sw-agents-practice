@@ -1,6 +1,7 @@
 """Test script to verify intelligent agent responses."""
 
 import asyncio
+
 from multi_agent_system import MultiAgentSystem
 
 

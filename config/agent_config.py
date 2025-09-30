@@ -1,7 +1,7 @@
 """Configuration for multi-agent system."""
 
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
 # LLM Configuration
 LLM_CONFIG = {

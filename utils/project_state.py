@@ -1,11 +1,11 @@
 """Project state management for the multi-agent system."""
 
-from typing import Dict, List, Any, Optional
+import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import json
-import os
+from typing import Any, Dict, List, Optional
 
 
 class TaskStatus(Enum):

@@ -1,14 +1,15 @@
 """Base agent class for the multi-agent system."""
 
-from typing import Dict, Any, Optional, List
-from autogen_ext.models.anthropic import AnthropicChatCompletionClient
-from autogen_agentchat.agents import AssistantAgent
-from autogen_agentchat.messages import TextMessage
-from autogen_core import CancellationToken
-from dotenv import load_dotenv
 import asyncio
 import logging
 import os
+from typing import Any, Dict, List, Optional
+
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
+from autogen_ext.models.anthropic import AnthropicChatCompletionClient
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()

@@ -4,9 +4,11 @@ Simple test script to verify multi-agent system functionality
 before AWS deployment.
 """
 
-import os
 import asyncio
+import os
+
 from dotenv import load_dotenv
+
 from multi_agent_system import MultiAgentSystem
 
 # Load environment variables

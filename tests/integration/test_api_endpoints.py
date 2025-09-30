@@ -1,11 +1,12 @@
 """Integration tests for API endpoints."""
 
-import pytest
 import asyncio
-from fastapi.testclient import TestClient
-from unittest.mock import Mock, AsyncMock, patch
-import sys
 import os
+import sys
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+from fastapi.testclient import TestClient
 
 # Add parent directory to path for imports
 sys.path.insert(

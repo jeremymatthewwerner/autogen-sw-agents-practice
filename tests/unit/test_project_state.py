@@ -1,8 +1,10 @@
 """Unit tests for project state management utilities."""
 
-import pytest
 from datetime import datetime
-from utils.project_state import ProjectState, Task, TaskStatus, ProjectPhase
+
+import pytest
+
+from utils.project_state import ProjectPhase, ProjectState, Task, TaskStatus
 
 
 class TestTask:

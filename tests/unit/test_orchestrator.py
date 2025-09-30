@@ -1,11 +1,13 @@
 """Unit tests for OrchestratorAgent functionality."""
 
-import pytest
 import uuid
-from unittest.mock import Mock, patch, MagicMock
-from agents.orchestrator import OrchestratorAgent
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
 from agents.base_agent import BaseAgent
-from utils.project_state import ProjectState, Task, TaskStatus, ProjectPhase
+from agents.orchestrator import OrchestratorAgent
+from utils.project_state import ProjectPhase, ProjectState, Task, TaskStatus
 
 
 class TestOrchestratorAgent:
