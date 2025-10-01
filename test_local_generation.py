@@ -2,6 +2,7 @@
 """Quick test to verify code generation works locally."""
 
 import asyncio
+
 from multi_agent_system import MultiAgentSystem
 
 
