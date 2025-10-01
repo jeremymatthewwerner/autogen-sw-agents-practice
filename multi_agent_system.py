@@ -99,7 +99,7 @@ class MultiAgentSystem:
             "status": "started",
             "project_id": project_id,
             "result": f"Development project '{project_name}' initiated. Agents are now coordinating to complete the request.",
-            "agents_involved": list(self.orchestrator.agents.keys()),
+            "agents_involved": list(self.orchestrator.agent_registry.keys()),
         }
 
     async def get_system_status(self):
