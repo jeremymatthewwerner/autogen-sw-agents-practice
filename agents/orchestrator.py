@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from agents.base_agent import BaseAgent
 from config.agent_config import get_agent_config
+from utils.code_generator import CodeGenerator
 from utils.project_state import ProjectPhase, ProjectState, Task, TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class OrchestratorAgent(BaseAgent):
         )
         self.project_states: Dict[str, ProjectState] = {}
         self.agent_registry: Dict[str, BaseAgent] = {}
+        self.code_generator = CodeGenerator()
 
     def register_agent(self, agent_name: str, agent: BaseAgent) -> None:
         """Register an agent with the orchestrator."""
@@ -183,11 +185,38 @@ class OrchestratorAgent(BaseAgent):
                     agent.status = "ready"
                     agent.current_task = ""
                     logger.info(f"Task completed: {task.name}")
+
+                    # If this is a code generation task, write files to disk
+                    if task.assigned_to in [
+                        "BackendDeveloper",
+                        "QAEngineer",
+                    ] and result.get("output"):
+                        try:
+                            gen_result = (
+                                self.code_generator.generate_project_from_agent_output(
+                                    project_id,
+                                    project.project_name,
+                                    {task.assigned_to: result["output"]},
+                                )
+                            )
+                            # Store generation results as an artifact
+                            artifact_key = f"generated_files_{task.assigned_to.lower()}"
+                            project.add_artifact(artifact_key, gen_result)
+                            logger.info(
+                                f"Generated {gen_result['files_generated']} files from {task.assigned_to}"
+                            )
+                        except Exception as gen_error:
+                            logger.error(f"Code generation error: {gen_error}")
+
+                    # Auto-save project state after successful task completion
+                    self._save_project_state(project_id)
                 else:
                     project.update_task_status(task.id, TaskStatus.FAILED)
                     agent.status = "error"
                     agent.current_task = f"Failed: {task.name}"
                     logger.error(f"Task failed: {task.name}")
+                    # Save state even on failure for debugging
+                    self._save_project_state(project_id)
 
                 results.append(result)
 
@@ -233,6 +262,40 @@ class OrchestratorAgent(BaseAgent):
             ),
         }
 
+    def _save_project_state(self, project_id: str) -> None:
+        """Save project state to disk."""
+        if project_id not in self.project_states:
+            return
+
+        project = self.project_states[project_id]
+        try:
+            # Save to {base_output_dir}/{project_name}_{id}/state.json
+            import re
+
+            safe_name = re.sub(r"[^\w\s-]", "", project.project_name.lower())
+            safe_name = re.sub(r"[-\s]+", "_", safe_name)
+
+            # Use code generator's base path
+            base_path = self.code_generator.base_output_dir
+            project_dir = base_path / f"{safe_name}_{project_id[:8]}"
+            state_file = project_dir / "state.json"
+
+            project.save_to_file(str(state_file))
+            logger.info(f"Saved project state to {state_file}")
+        except Exception as e:
+            logger.error(f"Failed to save project state: {e}")
+
+    def load_project_state(self, state_file: str) -> str:
+        """Load project state from file and return project ID."""
+        try:
+            project = ProjectState.load_from_file(state_file)
+            self.project_states[project.project_id] = project
+            logger.info(f"Loaded project {project.project_id} from {state_file}")
+            return project.project_id
+        except Exception as e:
+            logger.error(f"Failed to load project state: {e}")
+            raise
+
     def coordinate_agents(self, project_id: str) -> bool:
         """Main coordination loop for a project."""
         if project_id not in self.project_states:
@@ -254,10 +317,12 @@ class OrchestratorAgent(BaseAgent):
                 if all_complete:
                     logger.info(f"Project {project_id} completed")
                     project.phase = ProjectPhase.COMPLETED
+                    self._save_project_state(project_id)
                     return True
                 else:
                     # Some tasks might be blocked
                     logger.warning(f"Project {project_id} has blocked tasks")
+                    self._save_project_state(project_id)
                     return False
 
             # Execute next batch of tasks
@@ -266,6 +331,7 @@ class OrchestratorAgent(BaseAgent):
             # Check for critical failures
             if any(r["status"] == "error" for r in results):
                 logger.error(f"Critical error in project {project_id}")
+                self._save_project_state(project_id)
                 return False
 
         return True

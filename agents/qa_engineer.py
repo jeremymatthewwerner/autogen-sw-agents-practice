@@ -1,9 +1,14 @@
 """QA Engineer Agent for testing."""
 
-from typing import Any, Dict
+import logging
+import subprocess
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from agents.base_agent import BaseAgent
 from config.agent_config import get_agent_config
+
+logger = logging.getLogger(__name__)
 
 
 class QAEngineerAgent(BaseAgent):
@@ -34,39 +39,41 @@ class QAEngineerAgent(BaseAgent):
         - Backend Code: {backend_code.get('generation_method', 'generated')}
         - Framework: {backend_code.get('framework', 'FastAPI')}
 
+        IMPORTANT: Format your response with each file clearly marked using this exact format:
+
+        **filename.py**
+        ```python
+        code here
+        ```
+
         Generate complete test files:
 
-        1. **test_main.py** - API endpoint tests:
+        1. **tests/test_main.py** - API endpoint tests:
            - Test all endpoints based on user stories
-           - Authentication flow testing
+           - Authentication flow testing (if auth exists)
            - Error handling tests
            - Edge case validation
 
-        2. **test_models.py** - Database model tests:
+        2. **tests/test_models.py** - Database model tests (if models exist):
            - Model validation tests
            - Relationship tests
            - Constraint testing
 
-        3. **test_auth.py** - Authentication tests:
-           - Registration tests
-           - Login/logout tests
-           - JWT token validation
-           - Permission tests
-
-        4. **conftest.py** - Test configuration:
+        3. **tests/conftest.py** - Test configuration:
            - Test database setup
            - Test client fixtures
            - Mock data fixtures
 
-        5. **pytest.ini** - Test runner configuration
+        4. **pytest.ini** - Test runner configuration
 
         Requirements:
         - Achieve >80% code coverage
         - Include integration tests
         - Test both success and failure scenarios
         - Use pytest best practices
-        - Include performance tests where relevant
+        - Make tests runnable with `pytest` command
 
+        Remember to use the **filename** format before each code block!
         Provide complete, runnable test files.
         """
 
@@ -104,6 +111,84 @@ def test_api_health():
                 "generation_method": "fallback_template",
             }
 
+    def run_tests(self, project_dir: Path) -> Dict[str, Any]:
+        """Run pytest on generated test files.
+
+        Args:
+            project_dir: Path to the project directory
+
+        Returns:
+            Dictionary with test results
+        """
+        result = {
+            "tests_run": False,
+            "passed": 0,
+            "failed": 0,
+            "errors": [],
+            "output": "",
+        }
+
+        try:
+            # Check if tests directory exists
+            tests_dir = project_dir / "tests"
+            if not tests_dir.exists():
+                logger.warning(f"Tests directory not found: {tests_dir}")
+                result["errors"].append("No tests directory found")
+                return result
+
+            # Run pytest with coverage
+            cmd = ["pytest", str(tests_dir), "-v", "--tb=short"]
+
+            logger.info(f"Running tests in {tests_dir}")
+            proc = subprocess.run(
+                cmd,
+                cwd=str(project_dir),
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+
+            result["tests_run"] = True
+            result["output"] = proc.stdout + "\n" + proc.stderr
+            result["exit_code"] = proc.returncode
+
+            # Parse pytest output for pass/fail counts
+            output_lines = result["output"].split("\n")
+            for line in output_lines:
+                if "passed" in line.lower() or "failed" in line.lower():
+                    # Try to extract test counts
+                    import re
+
+                    passed_match = re.search(r"(\d+) passed", line)
+                    failed_match = re.search(r"(\d+) failed", line)
+
+                    if passed_match:
+                        result["passed"] = int(passed_match.group(1))
+                    if failed_match:
+                        result["failed"] = int(failed_match.group(1))
+
+            if proc.returncode != 0 and result["failed"] == 0:
+                # Tests didn't run properly
+                result["errors"].append(f"Test execution failed: {proc.stderr[:200]}")
+
+            logger.info(
+                f"Tests completed: {result['passed']} passed, {result['failed']} failed"
+            )
+
+        except subprocess.TimeoutExpired:
+            result["errors"].append("Test execution timed out after 60 seconds")
+            logger.error("Test execution timed out")
+        except FileNotFoundError:
+            result["errors"].append(
+                "pytest not found - install with: pip install pytest"
+            )
+            logger.error("pytest not found")
+        except Exception as e:
+            result["errors"].append(f"Error running tests: {str(e)}")
+            logger.error(f"Error running tests: {e}")
+
+        return result
+
     def process_request(self, message: str, context=None):
         """Generate tests for the application."""
         try:
@@ -128,6 +213,27 @@ def test_api_health():
             import asyncio
 
             test_result = asyncio.run(self.generate_tests(backend_code, requirements))
+
+            # Try to run tests if project directory exists
+            project_name = context.get("project_name", "")
+            if project_name:
+                # Look for generated project directory
+                import re
+
+                safe_name = re.sub(r"[^\w\s-]", "", project_name.lower())
+                safe_name = re.sub(r"[-\s]+", "_", safe_name)
+
+                # Try to find the project directory
+                from pathlib import Path
+
+                projects_dir = Path("projects")
+                matching_dirs = list(projects_dir.glob(f"{safe_name}*"))
+
+                if matching_dirs:
+                    project_dir = matching_dirs[0]
+                    logger.info(f"Running tests in {project_dir}")
+                    test_run_result = self.run_tests(project_dir)
+                    test_result["test_execution"] = test_run_result
 
             return {"agent": self.name, "status": "success", "output": test_result}
 

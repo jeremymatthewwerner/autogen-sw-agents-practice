@@ -36,22 +36,28 @@ class BackendDeveloperAgent(BaseAgent):
         - User Stories: {len(user_stories)} stories defined
         - Architecture: {architecture.get('architecture_analysis', 'FastAPI-based system')}
 
+        IMPORTANT: Format your response with each file clearly marked using this exact format:
+
+        **filename.py**
+        ```python
+        code here
+        ```
+
         Generate the following files:
 
         1. **main.py** - FastAPI application with:
            - Proper app configuration
-           - CORS middleware
-           - Authentication middleware
+           - CORS middleware if needed
            - Error handling
            - API endpoints based on user stories
            - Health check endpoint
 
         2. **models.py** - Database models using SQLAlchemy:
-           - User model with authentication fields
+           - User model with authentication fields (if needed)
            - Business domain models based on requirements
            - Proper relationships and constraints
 
-        3. **auth.py** - Authentication system:
+        3. **auth.py** (if authentication needed) - Authentication system:
            - JWT token handling
            - Password hashing
            - Login/register endpoints
@@ -59,11 +65,13 @@ class BackendDeveloperAgent(BaseAgent):
         4. **database.py** - Database configuration:
            - SQLAlchemy setup
            - Database connection handling
-           - Migration support
+           - Session management
 
-        5. **requirements.txt** - All necessary dependencies
+        5. **requirements.txt** - All necessary dependencies with specific versions
 
         6. **Dockerfile** - Production-ready container setup
+
+        7. **tests/test_api.py** - Basic pytest tests for main endpoints
 
         Focus on:
         - Security best practices
@@ -71,8 +79,9 @@ class BackendDeveloperAgent(BaseAgent):
         - Input validation with Pydantic
         - Clean, maintainable code
         - Production readiness
+        - Complete, working code that can be immediately deployed
 
-        Provide complete, working code files that can be immediately deployed.
+        Remember to use the **filename** format before each code block!
         """
 
         try:

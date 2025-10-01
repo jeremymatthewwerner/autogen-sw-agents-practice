@@ -36,17 +36,29 @@ class ArchitectAgent(BaseAgent):
         Design a production-ready architecture with:
 
         1. **System Overview** - architecture pattern, deployment model
-        2. **Technology Stack** - backend framework, database, frontend, deployment tools
+        2. **Technology Stack** - backend framework, database, frontend (if needed), deployment tools
         3. **Component Architecture** - major system components and their responsibilities
-        4. **API Design** - RESTful endpoints based on the user stories
-        5. **Data Model** - database schema and relationships
-        6. **Security Architecture** - authentication, authorization, data protection
+        4. **API Design** - RESTful endpoints based on the user stories (list specific endpoints with HTTP methods)
+        5. **Data Model** - database schema with specific tables, fields, and relationships
+        6. **Security Architecture** - authentication strategy, authorization, data protection
         7. **Deployment Architecture** - containerization, orchestration, cloud services
-        8. **Scalability Considerations** - how the system can grow
+        8. **Project File Structure** - Specify the exact directory structure and key files needed:
+           ```
+           project_root/
+           ├── main.py
+           ├── models.py
+           ├── database.py
+           ├── requirements.txt
+           ├── Dockerfile
+           ├── tests/
+           │   └── test_api.py
+           └── README.md
+           ```
         9. **Technical Decisions** - rationale for major technology choices
 
         Focus on Python-based solutions (FastAPI, Django, Flask) but adapt based on requirements.
         Provide specific, implementable recommendations with clear justifications.
+        Be concrete and detailed so backend developers can implement exactly what you specify.
         """
 
         try:
