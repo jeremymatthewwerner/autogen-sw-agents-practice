@@ -208,16 +208,16 @@ jobs:
     - name: Update ECS service
       run: |
         aws ecs update-service \
-          --cluster multi-agent-cluster \
-          --service multi-agent-service \
+          --cluster multi-agent-system-cluster \
+          --service multi-agent-system-service \
           --force-new-deployment \
           --region ${{ env.AWS_REGION }}
 
     - name: Wait for service stability
       run: |
         aws ecs wait services-stable \
-          --cluster multi-agent-cluster \
-          --services multi-agent-service \
+          --cluster multi-agent-system-cluster \
+          --services multi-agent-system-service \
           --region ${{ env.AWS_REGION }}
 
     - name: Verify deployment
