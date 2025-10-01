@@ -4,6 +4,7 @@
 import asyncio
 from multi_agent_system import MultiAgentSystem
 
+
 async def test_generation():
     print("🚀 Testing local code generation...")
 
@@ -13,7 +14,7 @@ async def test_generation():
     print("\n📝 Creating test project...")
     result = await system.process_development_request(
         "Build a simple FastAPI with a /hello endpoint that returns 'Hello World'",
-        {"project_type": "simple_api"}
+        {"project_type": "simple_api"},
     )
 
     print(f"\n✅ Result: {result['status']}")
@@ -21,9 +22,14 @@ async def test_generation():
 
     # Check if files were generated
     import os
+
     projects_dir = "projects"
     if os.path.exists(projects_dir):
-        project_dirs = [d for d in os.listdir(projects_dir) if os.path.isdir(os.path.join(projects_dir, d))]
+        project_dirs = [
+            d
+            for d in os.listdir(projects_dir)
+            if os.path.isdir(os.path.join(projects_dir, d))
+        ]
         print(f"\n📁 Found {len(project_dirs)} project directories")
 
         if project_dirs:
@@ -32,7 +38,7 @@ async def test_generation():
             files = []
             for root, dirs, filenames in os.walk(project_path):
                 for f in filenames:
-                    if f.endswith(('.py', '.txt', '.json')):
+                    if f.endswith((".py", ".txt", ".json")):
                         rel_path = os.path.relpath(os.path.join(root, f), project_path)
                         files.append(rel_path)
 
@@ -41,6 +47,7 @@ async def test_generation():
                 print(f"   - {f}")
 
     print("\n✨ Test complete!")
+
 
 if __name__ == "__main__":
     asyncio.run(test_generation())
