@@ -50,3 +50,6 @@ htmlcov/
 .terraform/
 *.tfvars
 .terraform.lock.hcl
+
+# Generated projects
+projects/

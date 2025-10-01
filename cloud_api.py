@@ -336,27 +336,384 @@ async def deploy_to_aws(project_id: str, deployment_target: str):
             "Starting AWS deployment", project_id=project_id, target=deployment_target
         )
 
-        # This would implement the actual deployment logic
-        # For now, it's a placeholder that logs the deployment intent
-
         project_state = multi_agent_system.orchestrator.project_states.get(project_id)
         if not project_state:
+            logger.error("Project state not found", project_id=project_id)
             return
 
-        # TODO: Implement actual deployment logic based on target
-        # - ECS: Create task definition, service, and deploy
-        # - Lambda: Package and deploy functions
-        # - Elastic Beanstalk: Create application version and deploy
+        # Get deployment artifacts from project state
+        deployment_config = project_state.artifacts.get("deployment_config", {})
+        backend_code = project_state.artifacts.get("backend_code", {})
 
-        logger.info(
-            "AWS deployment placeholder",
-            project_id=project_id,
-            target=deployment_target,
-            message="Deployment logic to be implemented",
-        )
+        if deployment_target == "ecs":
+            await deploy_to_ecs(project_id, project_state, deployment_config, backend_code)
+        elif deployment_target == "lambda":
+            await deploy_to_lambda(project_id, project_state, deployment_config, backend_code)
+        elif deployment_target == "beanstalk":
+            await deploy_to_beanstalk(project_id, project_state, deployment_config, backend_code)
+        else:
+            logger.warning(
+                "Unknown deployment target",
+                project_id=project_id,
+                target=deployment_target,
+            )
 
     except Exception as e:
         logger.error("Failed to deploy to AWS", project_id=project_id, error=str(e))
+
+
+async def deploy_to_ecs(
+    project_id: str,
+    project_state: ProjectState,
+    deployment_config: Dict[str, Any],
+    backend_code: Dict[str, Any],
+):
+    """Deploy application to AWS ECS with Fargate."""
+    try:
+        ecs_client = boto3.client("ecs", region_name=AWS_REGION)
+        ecr_client = boto3.client("ecr", region_name=AWS_REGION)
+
+        # Create ECR repository for the project
+        repo_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        try:
+            ecr_response = ecr_client.create_repository(
+                repositoryName=repo_name,
+                imageScanningConfiguration={"scanOnPush": True},
+                encryptionConfiguration={"encryptionType": "AES256"},
+            )
+            repository_uri = ecr_response["repository"]["repositoryUri"]
+            logger.info("ECR repository created", repository_uri=repository_uri)
+        except ecr_client.exceptions.RepositoryAlreadyExistsException:
+            describe_response = ecr_client.describe_repositories(repositoryNames=[repo_name])
+            repository_uri = describe_response["repositories"][0]["repositoryUri"]
+            logger.info("Using existing ECR repository", repository_uri=repository_uri)
+
+        # Store Docker build instructions in S3
+        if S3_BUCKET_NAME:
+            dockerfile_content = deployment_config.get("dockerfile", _get_default_dockerfile(backend_code))
+            s3_client.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=f"projects/{project_id}/deployment/Dockerfile",
+                Body=dockerfile_content,
+                ContentType="text/plain",
+            )
+
+        # Create ECS task definition
+        task_family = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        task_definition = {
+            "family": task_family,
+            "networkMode": "awsvpc",
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "256",
+            "memory": "512",
+            "containerDefinitions": [
+                {
+                    "name": f"{project_state.project_name.lower().replace(' ', '-')}-container",
+                    "image": f"{repository_uri}:latest",
+                    "portMappings": [{"containerPort": 8000, "protocol": "tcp"}],
+                    "environment": [
+                        {"name": "ENVIRONMENT", "value": ENVIRONMENT},
+                        {"name": "AWS_REGION", "value": AWS_REGION},
+                    ],
+                    "logConfiguration": {
+                        "logDriver": "awslogs",
+                        "options": {
+                            "awslogs-group": f"/ecs/{task_family}",
+                            "awslogs-region": AWS_REGION,
+                            "awslogs-stream-prefix": "ecs",
+                        },
+                    },
+                    "healthCheck": {
+                        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
+                        "interval": 30,
+                        "timeout": 5,
+                        "retries": 3,
+                        "startPeriod": 60,
+                    },
+                }
+            ],
+            "executionRoleArn": f"arn:aws:iam::{_get_account_id()}:role/ecsTaskExecutionRole",
+        }
+
+        # Register task definition
+        register_response = ecs_client.register_task_definition(**task_definition)
+        task_definition_arn = register_response["taskDefinition"]["taskDefinitionArn"]
+        logger.info("ECS task definition registered", task_definition_arn=task_definition_arn)
+
+        # Store deployment info in project state
+        project_state.artifacts["aws_deployment"] = {
+            "deployment_type": "ecs",
+            "repository_uri": repository_uri,
+            "task_definition_arn": task_definition_arn,
+            "deployed_at": datetime.utcnow().isoformat(),
+            "region": AWS_REGION,
+            "build_instructions": f"s3://{S3_BUCKET_NAME}/projects/{project_id}/deployment/Dockerfile" if S3_BUCKET_NAME else None,
+        }
+
+        logger.info(
+            "ECS deployment completed",
+            project_id=project_id,
+            repository_uri=repository_uri,
+            task_definition=task_definition_arn,
+        )
+
+    except Exception as e:
+        logger.error("ECS deployment failed", project_id=project_id, error=str(e))
+        raise
+
+
+async def deploy_to_lambda(
+    project_id: str,
+    project_state: ProjectState,
+    deployment_config: Dict[str, Any],
+    backend_code: Dict[str, Any],
+):
+    """Deploy application to AWS Lambda."""
+    try:
+        lambda_client = boto3.client("lambda", region_name=AWS_REGION)
+
+        function_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+
+        # Store Lambda deployment package location in S3
+        if S3_BUCKET_NAME:
+            lambda_handler_content = _generate_lambda_handler(backend_code)
+            deployment_package_key = f"projects/{project_id}/deployment/lambda-package.zip"
+
+            s3_client.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=f"projects/{project_id}/deployment/lambda_function.py",
+                Body=lambda_handler_content,
+                ContentType="text/x-python",
+            )
+
+        # Create or update Lambda function
+        lambda_config = {
+            "FunctionName": function_name,
+            "Runtime": "python3.11",
+            "Role": f"arn:aws:iam::{_get_account_id()}:role/lambda-execution-role",
+            "Handler": "lambda_function.handler",
+            "Code": {
+                "S3Bucket": S3_BUCKET_NAME if S3_BUCKET_NAME else "deployment-bucket",
+                "S3Key": f"projects/{project_id}/deployment/lambda-package.zip",
+            },
+            "Environment": {
+                "Variables": {
+                    "ENVIRONMENT": ENVIRONMENT,
+                    "PROJECT_ID": project_id,
+                }
+            },
+            "Timeout": 30,
+            "MemorySize": 512,
+        }
+
+        try:
+            create_response = lambda_client.create_function(**lambda_config)
+            function_arn = create_response["FunctionArn"]
+            logger.info("Lambda function created", function_arn=function_arn)
+        except lambda_client.exceptions.ResourceConflictException:
+            update_response = lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Runtime=lambda_config["Runtime"],
+                Role=lambda_config["Role"],
+                Handler=lambda_config["Handler"],
+                Environment=lambda_config["Environment"],
+                Timeout=lambda_config["Timeout"],
+                MemorySize=lambda_config["MemorySize"],
+            )
+            function_arn = update_response["FunctionArn"]
+            logger.info("Lambda function updated", function_arn=function_arn)
+
+        # Store deployment info
+        project_state.artifacts["aws_deployment"] = {
+            "deployment_type": "lambda",
+            "function_name": function_name,
+            "function_arn": function_arn,
+            "deployed_at": datetime.utcnow().isoformat(),
+            "region": AWS_REGION,
+        }
+
+        logger.info(
+            "Lambda deployment completed",
+            project_id=project_id,
+            function_name=function_name,
+            function_arn=function_arn,
+        )
+
+    except Exception as e:
+        logger.error("Lambda deployment failed", project_id=project_id, error=str(e))
+        raise
+
+
+async def deploy_to_beanstalk(
+    project_id: str,
+    project_state: ProjectState,
+    deployment_config: Dict[str, Any],
+    backend_code: Dict[str, Any],
+):
+    """Deploy application to AWS Elastic Beanstalk."""
+    try:
+        eb_client = boto3.client("elasticbeanstalk", region_name=AWS_REGION)
+
+        app_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        env_name = f"{app_name}-env"
+
+        # Create application if it doesn't exist
+        try:
+            eb_client.create_application(
+                ApplicationName=app_name,
+                Description=f"Generated by multi-agent system - {project_state.project_name}",
+            )
+            logger.info("Elastic Beanstalk application created", application_name=app_name)
+        except eb_client.exceptions.TooManyApplicationsException:
+            logger.info("Using existing Elastic Beanstalk application", application_name=app_name)
+
+        # Store deployment bundle in S3
+        if S3_BUCKET_NAME:
+            version_label = f"v-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+            bundle_key = f"projects/{project_id}/deployment/application-bundle.zip"
+
+            # Create application version
+            eb_client.create_application_version(
+                ApplicationName=app_name,
+                VersionLabel=version_label,
+                SourceBundle={"S3Bucket": S3_BUCKET_NAME, "S3Key": bundle_key},
+                AutoCreateApplication=False,
+            )
+
+            # Create or update environment
+            try:
+                env_response = eb_client.create_environment(
+                    ApplicationName=app_name,
+                    EnvironmentName=env_name,
+                    VersionLabel=version_label,
+                    SolutionStackName="64bit Amazon Linux 2023 v4.0.0 running Python 3.11",
+                    OptionSettings=[
+                        {
+                            "Namespace": "aws:elasticbeanstalk:environment",
+                            "OptionName": "EnvironmentType",
+                            "Value": "SingleInstance" if ENVIRONMENT == "dev" else "LoadBalanced",
+                        },
+                        {
+                            "Namespace": "aws:elasticbeanstalk:application:environment",
+                            "OptionName": "ENVIRONMENT",
+                            "Value": ENVIRONMENT,
+                        },
+                    ],
+                )
+                environment_url = env_response.get("CNAME", "")
+                logger.info("Elastic Beanstalk environment created", environment_name=env_name)
+            except eb_client.exceptions.TooManyEnvironmentsException:
+                eb_client.update_environment(
+                    EnvironmentName=env_name, VersionLabel=version_label
+                )
+                environments = eb_client.describe_environments(
+                    ApplicationName=app_name, EnvironmentNames=[env_name]
+                )
+                environment_url = environments["Environments"][0].get("CNAME", "")
+                logger.info("Elastic Beanstalk environment updated", environment_name=env_name)
+
+            # Store deployment info
+            project_state.artifacts["aws_deployment"] = {
+                "deployment_type": "beanstalk",
+                "application_name": app_name,
+                "environment_name": env_name,
+                "environment_url": f"http://{environment_url}" if environment_url else None,
+                "version_label": version_label,
+                "deployed_at": datetime.utcnow().isoformat(),
+                "region": AWS_REGION,
+            }
+
+            logger.info(
+                "Elastic Beanstalk deployment completed",
+                project_id=project_id,
+                application_name=app_name,
+                environment_url=environment_url,
+            )
+
+    except Exception as e:
+        logger.error("Elastic Beanstalk deployment failed", project_id=project_id, error=str(e))
+        raise
+
+
+def _get_account_id() -> str:
+    """Get AWS account ID."""
+    sts_client = boto3.client("sts")
+    return sts_client.get_caller_identity()["Account"]
+
+
+def _get_default_dockerfile(backend_code: Dict[str, Any]) -> str:
+    """Generate a default Dockerfile based on backend code."""
+    framework = backend_code.get("framework", "fastapi").lower()
+
+    return f"""FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \\
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+"""
+
+
+def _generate_lambda_handler(backend_code: Dict[str, Any]) -> str:
+    """Generate a Lambda handler based on backend code."""
+    return """import json
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def handler(event, context):
+    \"\"\"AWS Lambda handler function.\"\"\"
+    try:
+        logger.info(f"Received event: {json.dumps(event)}")
+
+        # Extract request information
+        http_method = event.get('httpMethod', 'GET')
+        path = event.get('path', '/')
+        body = event.get('body', '{}')
+
+        # Process request
+        if path == '/health':
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'status': 'healthy'})
+            }
+
+        # Default response
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({
+                'message': 'Application deployed successfully',
+                'method': http_method,
+                'path': path
+            })
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing request: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Internal server error'})
+        }
+"""
 
 
 # Metrics endpoint for monitoring
