@@ -7,6 +7,7 @@ on:
       - 'agents/**'
       - 'config/**'
       - 'utils/**'
+      - 'infrastructure/**'
       - 'multi_agent_system.py'
       - 'cloud_api.py'
       - 'requirements-cloud.txt'
