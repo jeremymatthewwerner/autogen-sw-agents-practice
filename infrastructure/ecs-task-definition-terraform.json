@@ -2,14 +2,14 @@
   "family": "multi-agent-system",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512",
-  "executionRoleArn": "arn:aws:iam::747674211436:role/multi-agent-system-ecs-task-execution-role",
-  "taskRoleArn": "arn:aws:iam::747674211436:role/multi-agent-system-ecs-task-role",
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "${ecs_task_execution_role_arn}",
+  "taskRoleArn": "${ecs_task_role_arn}",
   "containerDefinitions": [
     {
       "name": "multi-agent-orchestrator",
-      "image": "747674211436.dkr.ecr.us-east-1.amazonaws.com/multi-agent-system:latest",
+      "image": "${account_id}.dkr.ecr.${region}.amazonaws.com/multi-agent-system:latest",
       "portMappings": [
         {
           "containerPort": 8000,
@@ -21,18 +21,30 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/multi-agent-system",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "${region}",
           "awslogs-stream-prefix": "orchestrator"
         }
       },
       "environment": [
         {
           "name": "AWS_REGION",
-          "value": "us-east-1"
+          "value": "${region}"
         },
         {
           "name": "ENVIRONMENT",
-          "value": "dev"
+          "value": "${environment}"
+        },
+        {
+          "name": "DATABASE_URL",
+          "value": "postgresql://postgres:${database_password}@${database_endpoint}:5432/multiagent"
+        },
+        {
+          "name": "REDIS_URL",
+          "value": "redis://${redis_endpoint}:${redis_port}"
+        },
+        {
+          "name": "S3_BUCKET_NAME",
+          "value": "${s3_bucket_name}"
         }
       ],
       "secrets": [
