@@ -50,7 +50,7 @@
       "secrets": [
         {
           "name": "ANTHROPIC_API_KEY",
-          "valueFrom": "${secrets_manager_arn}:anthropic_api_key::"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:747674211436:secret:multi-agent-system-api-keys-z6sbEy:anthropic_api_key::"
         }
       ],
       "healthCheck": {
