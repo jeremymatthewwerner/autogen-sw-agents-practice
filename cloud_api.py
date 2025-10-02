@@ -13,9 +13,11 @@ from typing import Any, Dict, List, Optional
 
 import boto3
 import structlog
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from multi_agent_system import MultiAgentSystem
@@ -57,6 +59,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 # Initialize multi-agent system
 multi_agent_system = MultiAgentSystem()
@@ -107,10 +113,17 @@ class TaskDetail(BaseModel):
     output: Optional[Dict[str, Any]]
 
 
-# Root endpoint
-@app.get("/")
-async def root():
-    """Root endpoint with API information."""
+# Root endpoint - serve UI
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Root endpoint serving the web UI."""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+# API info endpoint
+@app.get("/api")
+async def api_info():
+    """API information endpoint."""
     return {
         "name": "Multi-Agent Software Development System",
         "version": "1.0.0",
