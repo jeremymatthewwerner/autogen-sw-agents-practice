@@ -19,7 +19,7 @@ env:
   ECR_REPOSITORY: multi-agent-system
   ECS_SERVICE: multi-agent-system-service
   ECS_CLUSTER: multi-agent-system-cluster
-  CONTAINER_NAME: multi-agent-orchestrator
+  CONTAINER_NAME: multi-agent-system
 
 jobs:
   test:
