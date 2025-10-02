@@ -163,6 +163,60 @@ async def health_check():
         raise HTTPException(status_code=503, detail="Service unhealthy")
 
 
+# Legacy UI endpoints for compatibility with templates/index.html
+class DevelopmentRequest(BaseModel):
+    task_description: str
+    requirements: Dict[str, Any] = {}
+
+
+class AgentStatus(BaseModel):
+    name: str
+    status: str  # "ready", "working", "idle"
+    current_task: str = ""
+
+
+class StatusResponse(BaseModel):
+    status: str
+    agents_active: int
+    current_task: Optional[str] = None
+    agents: List[AgentStatus] = []
+
+
+@app.get("/status")
+async def get_status():
+    """Get system status for UI - legacy endpoint."""
+    try:
+        status = await multi_agent_system.get_system_status()
+        return StatusResponse(**status)
+    except Exception as e:
+        logger.error("Status check failed", error=str(e))
+        # Return a basic status if detailed status fails
+        return StatusResponse(
+            status="error",
+            agents_active=0,
+            current_task=None,
+            agents=[]
+        )
+
+
+@app.post("/develop")
+async def develop_software(request: DevelopmentRequest):
+    """Legacy development endpoint for UI compatibility."""
+    try:
+        result = await multi_agent_system.process_development_request(
+            request.task_description, request.requirements
+        )
+
+        return {
+            "status": "completed",
+            "task": request.task_description,
+            "result": result,
+        }
+    except Exception as e:
+        logger.error("Development request failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Project management endpoints
 @app.post("/api/v1/projects", response_model=ProjectResponse)
 async def create_project(request: ProjectRequest, background_tasks: BackgroundTasks):
