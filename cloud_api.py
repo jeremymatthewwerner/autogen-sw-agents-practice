@@ -107,6 +107,24 @@ class TaskDetail(BaseModel):
     output: Optional[Dict[str, Any]]
 
 
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "name": "Multi-Agent Software Development System",
+        "version": "1.0.0",
+        "status": "online",
+        "environment": ENVIRONMENT,
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "api": "/api/v1"
+        }
+    }
+
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
