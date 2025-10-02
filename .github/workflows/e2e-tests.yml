@@ -1,0 +1,194 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      base_url:
+        description: 'Base URL to test (optional, overrides environment)'
+        required: false
+        type: string
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system pyautogen anthropic python-dotenv langchain langchain-anthropic langchain-community langgraph
+          uv pip install --system pytest pytest-asyncio pytest-playwright pytest-mock pytest-cov
+          uv pip install --system fastapi uvicorn boto3 structlog httpx
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Determine test URL
+        id: test-url
+        run: |
+          if [ -n "${{ github.event.inputs.base_url }}" ]; then
+            echo "E2E_BASE_URL=${{ github.event.inputs.base_url }}" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+            echo "E2E_BASE_URL=https://api.sw-agents.prod.example.com" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" = "staging" ]; then
+            echo "E2E_BASE_URL=https://api.sw-agents.staging.example.com" >> $GITHUB_ENV
+          else
+            echo "E2E_BASE_URL=http://localhost:8000" >> $GITHUB_ENV
+          fi
+
+      - name: Start local server (if testing locally)
+        if: ${{ !github.event.inputs.base_url && github.event.inputs.environment != 'staging' && github.event.inputs.environment != 'prod' }}
+        run: |
+          # Create test .env file
+          echo "ANTHROPIC_API_KEY=test-key" > .env
+          echo "TESTING=true" >> .env
+          echo "ENVIRONMENT=dev" >> .env
+
+          # Start the server in background
+          python cloud_api.py &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Wait for server to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done' || exit 1
+
+      - name: Run E2E tests
+        run: |
+          python -m pytest tests/e2e/ -v --tb=short --maxfail=3
+        env:
+          E2E_BASE_URL: ${{ env.E2E_BASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TESTING: true
+
+      - name: Stop local server
+        if: always() && env.SERVER_PID
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID || true
+          fi
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-coverage
+          path: htmlcov/
+          retention-days: 30
+
+  e2e-tests-cloud:
+    name: E2E Tests (Cloud Deployment)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'staging' || github.event.inputs.environment == 'prod')
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system pytest pytest-asyncio pytest-playwright
+          uv pip install --system httpx
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Set test URL
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+            echo "E2E_BASE_URL=${{ secrets.PROD_API_URL }}" >> $GITHUB_ENV
+          else
+            echo "E2E_BASE_URL=${{ secrets.STAGING_API_URL }}" >> $GITHUB_ENV
+          fi
+
+      - name: Wait for deployment health check
+        run: |
+          timeout 60 bash -c 'until curl -f $E2E_BASE_URL/health; do echo "Waiting for deployment..."; sleep 5; done'
+
+      - name: Run E2E smoke tests
+        run: |
+          python -m pytest tests/e2e/ -v -k "test_health or test_api_docs or test_openapi" --tb=short
+        env:
+          E2E_BASE_URL: ${{ env.E2E_BASE_URL }}
+
+      - name: Run full E2E test suite
+        run: |
+          python -m pytest tests/e2e/ -v --tb=short --maxfail=3
+        env:
+          E2E_BASE_URL: ${{ env.E2E_BASE_URL }}
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'E2E Tests Failed on ${{ github.event.inputs.environment }}',
+              body: 'E2E tests failed on ${{ github.event.inputs.environment }} environment.\n\nWorkflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+              labels: ['bug', 'e2e-failure', '${{ github.event.inputs.environment }}']
+            })
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-cloud-test-results-${{ github.event.inputs.environment }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
