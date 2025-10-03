@@ -152,20 +152,68 @@ uv pip freeze
 uv pip install --upgrade <package-name>
 ```
 
-### Git Workflow
+### Git Workflow & CI/CD Conventions
 
+**Standard Development Flow:**
 ```bash
-# Check status
+# 1. Check status
 git status
 
-# Stage changes
-git add .
+# 2. Stage changes
+git add <files>
 
-# Commit with descriptive message
-git commit -m "Description of changes"
+# 3. Commit with structured message (use heredoc for multi-line)
+git commit -m "$(cat <<'EOF'
+Brief description of change
 
-# Push to remote
+Detailed explanation:
+- What changed
+- Why it changed
+- Impact on system
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+# 4. Push to remote (triggers CI/CD)
 git push origin main
+```
+
+**Important Conventions:**
+1. **Always use heredoc for commit messages** - Ensures proper multi-line formatting
+2. **Include emoji footer** - `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+3. **Add Co-Authored-By** - `Co-Authored-By: Claude <noreply@anthropic.com>`
+4. **Push triggers CI/CD** - Every push to main automatically:
+   - Runs unit and integration tests
+   - Deploys to AWS dev environment (if tests pass)
+   - Runs E2E browser tests against deployed app
+5. **Never skip hooks** - Don't use `--no-verify` unless explicitly requested
+6. **Test before commit** - Run relevant tests locally first
+
+**CI/CD Pipeline Overview:**
+```
+git push → Unit/Integration Tests → Build & Push Docker Image →
+Deploy to AWS → E2E Browser Tests → Success/Failure Notification
+```
+
+**Working with GitHub Actions:**
+```bash
+# Trigger workflow manually
+gh workflow run "E2E Browser Tests" --field environment=dev
+
+# Watch workflow progress
+gh run watch <run-id>
+
+# List recent workflow runs
+gh run list --workflow="E2E Browser Tests" --limit 5
+
+# View workflow logs
+gh run view <run-id> --log
+
+# Check latest run status
+gh run list --limit 1
 ```
 
 ## Configuration Details
@@ -187,10 +235,62 @@ ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxx
 
 ## Testing Approach
 
-Currently no formal testing framework is configured, but you can:
-1. Run `test_claude_integration.py` to verify Claude connectivity
-2. Run `test_intelligent_agents.py` to test agent intelligence
-3. Use `hello_agents.py` for basic AutoGen functionality testing
+The project uses pytest with comprehensive test coverage:
+
+### Test Categories
+
+1. **Unit Tests** (`tests/unit/`)
+   - Test individual agent functions
+   - Mock external dependencies
+   - Fast execution (<5s total)
+
+2. **Integration Tests** (`tests/integration/`)
+   - Test agent interactions
+   - Test multi-agent workflows
+   - May use real API calls (slower)
+
+3. **E2E Browser Tests** (`tests/e2e/`)
+   - Test deployed UI with Playwright
+   - Isolated from app dependencies
+   - Run against live deployment
+
+### Running Tests Locally
+
+```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
+# Run all unit and integration tests (skip slow tests)
+PYTHONPATH=. pytest tests/unit/ tests/integration/ -v -m "not slow" --tb=short
+
+# Run specific test file
+PYTHONPATH=. pytest tests/unit/test_base_agent.py -v
+
+# Run E2E browser tests (requires deployed app)
+E2E_BASE_URL=http://multi-agent-system-alb-1995918544.us-east-1.elb.amazonaws.com \
+  python -m pytest tests/e2e/test_ui_workflows.py -v
+
+# Run with coverage
+PYTHONPATH=. pytest tests/unit/ --cov=agents --cov-report=html
+```
+
+### Test Conventions
+
+1. **Isolated E2E tests** - E2E tests have separate conftest.py, no agent imports
+2. **Minimal E2E dependencies** - Only pytest + playwright in requirements-e2e.txt
+3. **Mock external APIs** - Unit tests mock Claude API calls
+4. **PYTHONPATH=.** - Required for imports to work correctly
+5. **Mark slow tests** - Use `@pytest.mark.slow` for tests >10s
+6. **Browser tests timeout** - E2E tests use 30s timeout for page loads
+
+### CI/CD Test Pipeline
+
+Tests run automatically on every push:
+1. Unit tests (must pass to deploy)
+2. Integration tests (must pass to deploy)
+3. Docker build and push to ECR
+4. Deploy to AWS ECS
+5. E2E browser tests against deployed app
 
 ## Important Implementation Notes
 
