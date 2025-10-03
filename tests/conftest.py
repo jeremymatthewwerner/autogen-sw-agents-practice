@@ -2,18 +2,26 @@
 
 import asyncio
 import os
+import sys
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from agents.architect import ArchitectAgent
-from agents.backend_developer import BackendDeveloperAgent
-from agents.devops_engineer import DevOpsEngineerAgent
-from agents.documentation_agent import DocumentationAgent
-from agents.orchestrator import OrchestratorAgent
-from agents.product_manager import ProductManagerAgent
-from agents.qa_engineer import QAEngineerAgent
-from multi_agent_system import MultiAgentSystem
+# Try to import agent dependencies
+# If they're not available (e.g., in E2E test environment), skip agent fixtures
+try:
+    from agents.architect import ArchitectAgent
+    from agents.backend_developer import BackendDeveloperAgent
+    from agents.devops_engineer import DevOpsEngineerAgent
+    from agents.documentation_agent import DocumentationAgent
+    from agents.orchestrator import OrchestratorAgent
+    from agents.product_manager import ProductManagerAgent
+    from agents.qa_engineer import QAEngineerAgent
+    from multi_agent_system import MultiAgentSystem
+    AGENTS_AVAILABLE = True
+except ImportError:
+    # E2E tests don't need agent fixtures
+    AGENTS_AVAILABLE = False
 
 
 @pytest.fixture
@@ -28,64 +36,66 @@ def mock_anthropic_api():
     return mock
 
 
-@pytest.fixture
-def product_manager_agent(mock_anthropic_api):
-    """Create a ProductManager agent with mocked Claude API."""
-    agent = ProductManagerAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+# Only define agent fixtures if agents are available
+if AGENTS_AVAILABLE:
+    @pytest.fixture
+    def product_manager_agent(mock_anthropic_api):
+        """Create a ProductManager agent with mocked Claude API."""
+        agent = ProductManagerAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def architect_agent(mock_anthropic_api):
-    """Create an Architect agent with mocked Claude API."""
-    agent = ArchitectAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+    @pytest.fixture
+    def architect_agent(mock_anthropic_api):
+        """Create an Architect agent with mocked Claude API."""
+        agent = ArchitectAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def backend_developer_agent(mock_anthropic_api):
-    """Create a BackendDeveloper agent with mocked Claude API."""
-    agent = BackendDeveloperAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+    @pytest.fixture
+    def backend_developer_agent(mock_anthropic_api):
+        """Create a BackendDeveloper agent with mocked Claude API."""
+        agent = BackendDeveloperAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def qa_engineer_agent(mock_anthropic_api):
-    """Create a QAEngineer agent with mocked Claude API."""
-    agent = QAEngineerAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+    @pytest.fixture
+    def qa_engineer_agent(mock_anthropic_api):
+        """Create a QAEngineer agent with mocked Claude API."""
+        agent = QAEngineerAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def devops_engineer_agent(mock_anthropic_api):
-    """Create a DevOpsEngineer agent with mocked Claude API."""
-    agent = DevOpsEngineerAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+    @pytest.fixture
+    def devops_engineer_agent(mock_anthropic_api):
+        """Create a DevOpsEngineer agent with mocked Claude API."""
+        agent = DevOpsEngineerAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def documentation_agent(mock_anthropic_api):
-    """Create a DocumentationAgent with mocked Claude API."""
-    agent = DocumentationAgent()
-    agent.process_request_async = mock_anthropic_api
-    return agent
+    @pytest.fixture
+    def documentation_agent(mock_anthropic_api):
+        """Create a DocumentationAgent with mocked Claude API."""
+        agent = DocumentationAgent()
+        agent.process_request_async = mock_anthropic_api
+        return agent
 
 
-@pytest.fixture
-def orchestrator_agent():
-    """Create an orchestrator agent for testing."""
-    return OrchestratorAgent()
+    @pytest.fixture
+    def orchestrator_agent():
+        """Create an orchestrator agent for testing."""
+        return OrchestratorAgent()
 
 
-@pytest.fixture
-def multi_agent_system(orchestrator_agent):
-    """Create a complete multi-agent system for testing."""
-    return MultiAgentSystem()
+    @pytest.fixture
+    def multi_agent_system(orchestrator_agent):
+        """Create a complete multi-agent system for testing."""
+        return MultiAgentSystem()
 
 
 @pytest.fixture
@@ -107,10 +117,11 @@ def sample_requirements():
     }
 
 
-@pytest.fixture
-def sample_project_id(orchestrator_agent, sample_requirements):
-    """Create a sample project for testing."""
-    return orchestrator_agent.create_project("Test Project", sample_requirements["raw"])
+if AGENTS_AVAILABLE:
+    @pytest.fixture
+    def sample_project_id(orchestrator_agent, sample_requirements):
+        """Create a sample project for testing."""
+        return orchestrator_agent.create_project("Test Project", sample_requirements["raw"])
 
 
 @pytest.fixture(autouse=True)
