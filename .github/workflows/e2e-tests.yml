@@ -1,10 +1,6 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -68,24 +64,9 @@ jobs:
           elif [ "${{ github.event.inputs.environment }}" = "staging" ]; then
             echo "E2E_BASE_URL=https://api.sw-agents.staging.example.com" >> $GITHUB_ENV
           else
-            echo "E2E_BASE_URL=http://localhost:8000" >> $GITHUB_ENV
+            # Default to dev AWS environment
+            echo "E2E_BASE_URL=http://multi-agent-system-alb-1995918544.us-east-1.elb.amazonaws.com" >> $GITHUB_ENV
           fi
-
-      - name: Start local server (if testing locally)
-        if: ${{ !github.event.inputs.base_url && github.event.inputs.environment != 'staging' && github.event.inputs.environment != 'prod' }}
-        run: |
-          # Create test .env file
-          echo "ANTHROPIC_API_KEY=test-key" > .env
-          echo "TESTING=true" >> .env
-          echo "ENVIRONMENT=dev" >> .env
-
-          # Start the server in background
-          python cloud_api.py &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-
-          # Wait for server to be ready
-          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done' || exit 1
 
       - name: Run E2E tests
         run: |
@@ -94,13 +75,6 @@ jobs:
           E2E_BASE_URL: ${{ env.E2E_BASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TESTING: true
-
-      - name: Stop local server
-        if: always() && env.SERVER_PID
-        run: |
-          if [ -n "$SERVER_PID" ]; then
-            kill $SERVER_PID || true
-          fi
 
       - name: Upload test artifacts
         if: always()
