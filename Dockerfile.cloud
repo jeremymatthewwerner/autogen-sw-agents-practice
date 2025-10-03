@@ -19,6 +19,8 @@ RUN pip install --no-cache-dir -r requirements-cloud.txt
 COPY agents/ ./agents/
 COPY config/ ./config/
 COPY utils/ ./utils/
+COPY models/ ./models/
+COPY services/ ./services/
 COPY static/ ./static/
 COPY templates/ ./templates/
 COPY multi_agent_system.py .
