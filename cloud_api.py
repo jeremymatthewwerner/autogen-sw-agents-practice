@@ -10,6 +10,7 @@ import os
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 import boto3
 import structlog
@@ -19,8 +20,12 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from models.database import Database, Project, Conversation, MessageRole
 from multi_agent_system import MultiAgentSystem
+from services.conversation_service import ConversationService
+from services.project_service import ProjectService
 from utils.project_state import ProjectPhase, ProjectState
 
 # Configure structured logging
@@ -75,6 +80,28 @@ secrets_client = boto3.client("secretsmanager")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./multi_agent_system.db")
+
+# Initialize database
+db = Database(DATABASE_URL)
+db.create_all()
+
+# Initialize services
+project_service = ProjectService()
+conversation_service = ConversationService(project_service)
+
+# Set multi-agent system for conversation service
+from services.conversation_service import set_multi_agent_system
+set_multi_agent_system(multi_agent_system)
+
+# Database dependency
+def get_db():
+    """Get database session."""
+    session = db.get_session()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 # Request/Response Models
@@ -113,10 +140,17 @@ class TaskDetail(BaseModel):
     output: Optional[Dict[str, Any]]
 
 
-# Root endpoint - serve UI
+# Root endpoint - serve conversational UI
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Root endpoint serving the web UI."""
+    """Root endpoint serving the conversational web UI."""
+    return templates.TemplateResponse("conversation.html", {"request": request})
+
+
+# Legacy UI endpoint
+@app.get("/legacy", response_class=HTMLResponse)
+async def legacy_ui(request: Request):
+    """Legacy UI endpoint."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -827,6 +861,225 @@ async def get_metrics():
     except Exception as e:
         logger.error("Failed to get metrics", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
+
+
+# ==================== NEW CONVERSATIONAL API ENDPOINTS ====================
+
+# Request/Response models for conversational API
+class CreateConversationalProjectRequest(BaseModel):
+    name: str
+    description: str
+
+
+class ConversationalProjectResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    status: str
+    deployment_url: Optional[str]
+    created_at: str
+    updated_at: str
+
+
+class SendMessageRequest(BaseModel):
+    message: str
+
+
+class MessageResponse(BaseModel):
+    role: str
+    content: str
+    agent_name: Optional[str]
+    metadata: Dict[str, Any]
+    created_at: str
+
+
+class ConversationHistoryResponse(BaseModel):
+    project_id: str
+    messages: List[MessageResponse]
+
+
+@app.post("/api/v2/projects", response_model=ConversationalProjectResponse)
+async def create_conversational_project(
+    request: CreateConversationalProjectRequest,
+    session: Session = Depends(get_db)
+):
+    """Create a new conversational project."""
+    try:
+        project = project_service.create_project(
+            name=request.name,
+            description=request.description,
+            session=session
+        )
+
+        return ConversationalProjectResponse(
+            id=str(project.id),
+            name=project.name,
+            description=project.description or "",
+            status=project.status,
+            deployment_url=project.deployment_url,
+            created_at=project.created_at.isoformat(),
+            updated_at=project.updated_at.isoformat(),
+        )
+
+    except Exception as e:
+        logger.error("Failed to create conversational project", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/projects", response_model=List[ConversationalProjectResponse])
+async def list_conversational_projects(
+    status: Optional[str] = None,
+    session: Session = Depends(get_db)
+):
+    """List all conversational projects."""
+    try:
+        projects = project_service.list_projects(session=session, status=status)
+
+        return [
+            ConversationalProjectResponse(
+                id=str(p.id),
+                name=p.name,
+                description=p.description or "",
+                status=p.status,
+                deployment_url=p.deployment_url,
+                created_at=p.created_at.isoformat(),
+                updated_at=p.updated_at.isoformat(),
+            )
+            for p in projects
+        ]
+
+    except Exception as e:
+        logger.error("Failed to list projects", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/projects/{project_id}", response_model=ConversationalProjectResponse)
+async def get_conversational_project(
+    project_id: UUID,
+    session: Session = Depends(get_db)
+):
+    """Get a specific conversational project."""
+    try:
+        project = project_service.get_project(project_id, session)
+
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return ConversationalProjectResponse(
+            id=str(project.id),
+            name=project.name,
+            description=project.description or "",
+            status=project.status,
+            deployment_url=project.deployment_url,
+            created_at=project.created_at.isoformat(),
+            updated_at=project.updated_at.isoformat(),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to get project", project_id=str(project_id), error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/projects/{project_id}/messages", response_model=MessageResponse)
+async def send_project_message(
+    project_id: UUID,
+    request: SendMessageRequest,
+    session: Session = Depends(get_db)
+):
+    """Send a message in a project conversation."""
+    try:
+        response = await conversation_service.send_message(
+            project_id=project_id,
+            user_message=request.message,
+            session=session
+        )
+
+        return MessageResponse(
+            role="assistant",
+            content=response["content"],
+            agent_name=response.get("agent_name"),
+            metadata=response.get("metadata", {}),
+            created_at=datetime.utcnow().isoformat(),
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(
+            "Failed to send message",
+            project_id=str(project_id),
+            error=str(e)
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/projects/{project_id}/conversation", response_model=ConversationHistoryResponse)
+async def get_project_conversation(
+    project_id: UUID,
+    limit: int = 50,
+    session: Session = Depends(get_db)
+):
+    """Get conversation history for a project."""
+    try:
+        history = conversation_service._get_conversation_history(
+            project_id=project_id,
+            session=session,
+            limit=limit
+        )
+
+        messages = [
+            MessageResponse(
+                role=msg["role"],
+                content=msg["content"],
+                agent_name=msg.get("agent_name"),
+                metadata=msg.get("metadata", {}),
+                created_at=msg["created_at"],
+            )
+            for msg in history
+        ]
+
+        return ConversationHistoryResponse(
+            project_id=str(project_id),
+            messages=messages
+        )
+
+    except Exception as e:
+        logger.error(
+            "Failed to get conversation",
+            project_id=str(project_id),
+            error=str(e)
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/v2/projects/{project_id}")
+async def delete_conversational_project(
+    project_id: UUID,
+    session: Session = Depends(get_db)
+):
+    """Delete a conversational project."""
+    try:
+        success = project_service.delete_project(project_id, session)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return {"status": "deleted", "project_id": str(project_id)}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to delete project",
+            project_id=str(project_id),
+            error=str(e)
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== END CONVERSATIONAL API ENDPOINTS ====================
 
 
 if __name__ == "__main__":

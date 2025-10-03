@@ -9,6 +9,14 @@ from services.project_service import ProjectService
 
 logger = logging.getLogger(__name__)
 
+# Will be set by cloud_api.py when initializing
+_multi_agent_system = None
+
+def set_multi_agent_system(system):
+    """Set the multi-agent system instance."""
+    global _multi_agent_system
+    _multi_agent_system = system
+
 
 class ConversationService:
     """Handles conversational interactions for project development."""
@@ -203,13 +211,52 @@ class ConversationService:
         Returns:
             Response with requirements analysis
         """
-        # Use ProductManager to analyze requirements
-        # This is a placeholder - will integrate with actual agent
-        return {
-            "content": f"I'll help you build '{project.name}'. Let me analyze your requirements:\n\n{message}\n\nI'll start by creating a detailed specification. What technology stack would you prefer?",
-            "metadata": {"phase": "requirements", "next_step": "tech_stack"},
-            "agent_name": "ProductManager"
-        }
+        if not _multi_agent_system:
+            return {
+                "content": f"I'll help you build '{project.name}'. I'm analyzing your requirements:\n\n{message}\n\nLet me create a detailed specification and plan.",
+                "metadata": {"phase": "requirements"},
+                "agent_name": "ProductManager"
+            }
+
+        # Use ProductManager agent to analyze requirements
+        try:
+            pm_agent = _multi_agent_system.orchestrator.agent_registry.get("ProductManager")
+            if pm_agent:
+                context = {
+                    "project_name": project.name,
+                    "user_request": message,
+                }
+                result = pm_agent.process_request(
+                    f"Analyze these requirements and create a structured specification: {message}",
+                    context
+                )
+
+                # Update project with requirements
+                if result.get("status") == "success" and result.get("output"):
+                    project.requirements = {"raw": message, "analyzed": result["output"]}
+                    session.commit()
+
+                content = result.get("output", result.get("response", "Requirements analyzed"))
+                return {
+                    "content": f"I've analyzed your requirements for '{project.name}':\n\n{content}\n\nShall I proceed with creating the architecture design?",
+                    "metadata": {"phase": "requirements", "analysis": result},
+                    "agent_name": "ProductManager"
+                }
+            else:
+                logger.warning("ProductManager agent not found")
+                return {
+                    "content": f"I'll help you build '{project.name}'. I'm analyzing your requirements.",
+                    "metadata": {"phase": "requirements"},
+                    "agent_name": "ProductManager"
+                }
+
+        except Exception as e:
+            logger.error(f"Error in ProductManager agent: {e}")
+            return {
+                "content": f"I encountered an error analyzing requirements: {str(e)}",
+                "metadata": {"error": str(e)},
+                "agent_name": "ProductManager"
+            }
 
     async def _handle_refinement(
         self,
