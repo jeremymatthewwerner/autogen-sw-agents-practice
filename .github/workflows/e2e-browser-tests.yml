@@ -1,0 +1,90 @@
+name: E2E Browser Tests
+
+on:
+  workflow_run:
+    workflows: ["Deploy Multi-Agent System to AWS"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  e2e-tests:
+    name: Run E2E Browser Tests
+    runs-on: ubuntu-latest
+    # Only run if deployment succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-e2e.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Set environment URL
+        id: set-url
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          else
+            ENV="dev"
+          fi
+          
+          case $ENV in
+            dev)
+              echo "BASE_URL=http://multi-agent-system-alb-1995918544.us-east-1.elb.amazonaws.com" >> $GITHUB_OUTPUT
+              ;;
+            staging)
+              echo "BASE_URL=http://multi-agent-system-staging-alb.elb.amazonaws.com" >> $GITHUB_OUTPUT
+              ;;
+            prod)
+              echo "BASE_URL=http://multi-agent-system-prod-alb.elb.amazonaws.com" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Run E2E browser tests
+        env:
+          E2E_BASE_URL: ${{ steps.set-url.outputs.BASE_URL }}
+        run: |
+          python -m pytest tests/e2e/test_ui_workflows.py \
+            -v \
+            --tb=short \
+            --maxfail=3
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            screenshots/
+          retention-days: 7
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::E2E browser tests failed! UI may be broken."
+          exit 1

@@ -42,46 +42,63 @@ class TestUIWorkflows:
     @pytest.mark.asyncio
     async def test_homepage_loads(self, page, app_url):
         """Test that the homepage loads successfully."""
-        try:
-            response = await page.goto(app_url, timeout=10000)
-            assert response.status == 200
+        response = await page.goto(app_url, timeout=30000)
+        assert response.status == 200
 
-            # Wait for page to be fully loaded
-            await page.wait_for_load_state("networkidle", timeout=5000)
+        # Wait for page to be fully loaded
+        await page.wait_for_load_state("networkidle", timeout=10000)
 
-            # Check basic page structure exists
-            assert page.url.startswith(app_url)
-        except Exception as e:
-            pytest.skip(f"App not running or not accessible: {e}")
+        # Check that we got HTML
+        content = await page.content()
+        assert "<!DOCTYPE html>" in content or "<html" in content
+
+        # Check for key UI elements
+        await page.wait_for_selector("h1", timeout=5000)
+        title = await page.text_content("h1")
+        assert "Multi-Agent" in title or "Agent" in title
 
     @pytest.mark.asyncio
     async def test_health_endpoint(self, page, app_url):
         """Test that the health check endpoint returns healthy status."""
-        try:
-            response = await page.goto(f"{app_url}/health", timeout=10000)
-            assert response.status == 200
+        response = await page.goto(f"{app_url}/health", timeout=30000)
+        assert response.status == 200
 
-            # Get the response body
-            content = await page.content()
-            assert "healthy" in content.lower() or "status" in content.lower()
-        except Exception as e:
-            pytest.skip(f"Health endpoint not accessible: {e}")
+        # Get the response body
+        content = await page.content()
+        assert "healthy" in content.lower() or "status" in content.lower()
+
+    @pytest.mark.asyncio
+    async def test_agent_status_loads(self, page, app_url):
+        """Test that agent status section loads without errors."""
+        response = await page.goto(app_url, timeout=30000)
+        assert response.status == 200
+
+        # Wait for page load
+        await page.wait_for_load_state("networkidle", timeout=10000)
+
+        # Wait for agent status section
+        await page.wait_for_selector("#agentStatus", timeout=10000)
+
+        # Check that agent status loaded (not showing error message)
+        agent_status_text = await page.text_content("#agentStatus")
+        assert "Unable to load" not in agent_status_text, "Agent status failed to load"
+
+        # Verify we have agent cards displayed
+        agent_cards = await page.query_selector_all(".agent-status")
+        assert len(agent_cards) > 0, "No agent status cards found"
 
     @pytest.mark.asyncio
     async def test_api_docs_accessible(self, page, app_url):
         """Test that the API documentation is accessible."""
-        try:
-            response = await page.goto(f"{app_url}/docs", timeout=10000)
-            assert response.status == 200
+        response = await page.goto(f"{app_url}/docs", timeout=30000)
+        assert response.status == 200
 
-            # Wait for Swagger UI to load
-            await page.wait_for_selector(".swagger-ui", timeout=5000)
+        # Wait for Swagger UI to load
+        await page.wait_for_selector("#swagger-ui", timeout=10000)
 
-            # Check that API title is present
-            page_content = await page.content()
-            assert "Multi-Agent Software Development System" in page_content or "swagger" in page_content.lower()
-        except Exception as e:
-            pytest.skip(f"API docs not accessible: {e}")
+        # Check that API title is present
+        page_content = await page.content()
+        assert "Multi-Agent Software Development System" in page_content or "swagger" in page_content.lower()
 
     @pytest.mark.asyncio
     async def test_create_project_endpoint(self, page, app_url):
