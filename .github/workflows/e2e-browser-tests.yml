@@ -69,7 +69,10 @@ jobs:
           python -m pytest tests/e2e/test_ui_workflows.py \
             -v \
             --tb=short \
-            --maxfail=3
+            --maxfail=3 \
+            --ignore=tests/conftest.py \
+            --ignore=tests/unit \
+            --ignore=tests/integration
 
       - name: Upload test results
         if: always()
