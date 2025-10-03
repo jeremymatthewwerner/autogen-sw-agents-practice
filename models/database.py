@@ -58,7 +58,7 @@ class Project(Base):
     # Metadata
     requirements = Column(JSON)  # Structured requirements from ProductManager
     architecture = Column(JSON)  # System design from Architect
-    tech_stack = Column(JSON)    # Technology choices
+    tech_stack = Column(JSON)  # Technology choices
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -66,9 +66,15 @@ class Project(Base):
     deployed_at = Column(DateTime, nullable=True)
 
     # Relationships
-    conversations = relationship("Conversation", back_populates="project", cascade="all, delete-orphan")
-    artifacts = relationship("Artifact", back_populates="project", cascade="all, delete-orphan")
-    deployments = relationship("Deployment", back_populates="project", cascade="all, delete-orphan")
+    conversations = relationship(
+        "Conversation", back_populates="project", cascade="all, delete-orphan"
+    )
+    artifacts = relationship(
+        "Artifact", back_populates="project", cascade="all, delete-orphan"
+    )
+    deployments = relationship(
+        "Deployment", back_populates="project", cascade="all, delete-orphan"
+    )
 
 
 class Conversation(Base):
@@ -160,7 +166,9 @@ class Database:
             database_url: PostgreSQL connection string
         """
         self.engine = create_engine(database_url, echo=False)
-        self.SessionLocal = sessionmaker(bind=self.engine, autocommit=False, autoflush=False)
+        self.SessionLocal = sessionmaker(
+            bind=self.engine, autocommit=False, autoflush=False
+        )
 
     def create_all(self):
         """Create all database tables."""

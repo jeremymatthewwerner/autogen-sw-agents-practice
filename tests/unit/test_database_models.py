@@ -33,7 +33,7 @@ class TestProject:
         project = Project(
             name="Test Project",
             description="Test Description",
-            status=ProjectStatus.PLANNING.value
+            status=ProjectStatus.PLANNING.value,
         )
         test_db.add(project)
         test_db.commit()
@@ -47,7 +47,7 @@ class TestProject:
         """Test project with JSON requirements."""
         project = Project(
             name="API Project",
-            requirements={"features": ["auth", "crud"], "stack": "fastapi"}
+            requirements={"features": ["auth", "crud"], "stack": "fastapi"},
         )
         test_db.add(project)
         test_db.commit()
@@ -70,7 +70,7 @@ class TestConversation:
             project_id=project.id,
             role=MessageRole.USER.value,
             content="Build me an API",
-            message_metadata={"intent": "create"}
+            message_metadata={"intent": "create"},
         )
         test_db.add(conversation)
         test_db.commit()
@@ -86,20 +86,16 @@ class TestConversation:
         test_db.add(project)
         test_db.commit()
 
-        conv1 = Conversation(
-            project_id=project.id,
-            role="user",
-            content="Message 1"
-        )
+        conv1 = Conversation(project_id=project.id, role="user", content="Message 1")
         conv2 = Conversation(
-            project_id=project.id,
-            role="assistant",
-            content="Response 1"
+            project_id=project.id, role="assistant", content="Response 1"
         )
         test_db.add_all([conv1, conv2])
         test_db.commit()
 
-        retrieved_project = test_db.query(Project).filter(Project.id == project.id).first()
+        retrieved_project = (
+            test_db.query(Project).filter(Project.id == project.id).first()
+        )
         assert len(retrieved_project.conversations) == 2
 
 
@@ -117,7 +113,7 @@ class TestArtifact:
             type="code",
             path="main.py",
             content="print('hello')",
-            version=1
+            version=1,
         )
         test_db.add(artifact)
         test_db.commit()
@@ -134,11 +130,7 @@ class TestArtifact:
         test_db.commit()
 
         artifact = Artifact(
-            project_id=project.id,
-            type="code",
-            path="main.py",
-            content="v1",
-            version=1
+            project_id=project.id, type="code", path="main.py", content="v1", version=1
         )
         test_db.add(artifact)
         test_db.commit()
@@ -167,7 +159,7 @@ class TestDeployment:
             status="deployed",
             deployment_url="http://example.com",
             cloud_provider="aws",
-            resource_ids={"ecs_task": "task-123"}
+            resource_ids={"ecs_task": "task-123"},
         )
         test_db.add(deployment)
         test_db.commit()
@@ -184,14 +176,14 @@ class TestDeployment:
         test_db.commit()
 
         deployment = Deployment(
-            project_id=project.id,
-            environment="dev",
-            status="deployed"
+            project_id=project.id, environment="dev", status="deployed"
         )
         test_db.add(deployment)
         test_db.commit()
 
-        retrieved_project = test_db.query(Project).filter(Project.id == project.id).first()
+        retrieved_project = (
+            test_db.query(Project).filter(Project.id == project.id).first()
+        )
         assert len(retrieved_project.deployments) == 1
         assert retrieved_project.deployments[0].environment == "dev"
 
@@ -207,8 +199,12 @@ class TestDatabaseOperations:
 
         # Add related data
         conversation = Conversation(project_id=project.id, role="user", content="test")
-        artifact = Artifact(project_id=project.id, type="code", path="test.py", content="test")
-        deployment = Deployment(project_id=project.id, environment="dev", status="deployed")
+        artifact = Artifact(
+            project_id=project.id, type="code", path="test.py", content="test"
+        )
+        deployment = Deployment(
+            project_id=project.id, environment="dev", status="deployed"
+        )
 
         test_db.add_all([conversation, artifact, deployment])
         test_db.commit()
@@ -218,9 +214,22 @@ class TestDatabaseOperations:
         test_db.commit()
 
         # Verify related data is also deleted
-        assert test_db.query(Conversation).filter(Conversation.project_id == project.id).count() == 0
-        assert test_db.query(Artifact).filter(Artifact.project_id == project.id).count() == 0
-        assert test_db.query(Deployment).filter(Deployment.project_id == project.id).count() == 0
+        assert (
+            test_db.query(Conversation)
+            .filter(Conversation.project_id == project.id)
+            .count()
+            == 0
+        )
+        assert (
+            test_db.query(Artifact).filter(Artifact.project_id == project.id).count()
+            == 0
+        )
+        assert (
+            test_db.query(Deployment)
+            .filter(Deployment.project_id == project.id)
+            .count()
+            == 0
+        )
 
     def test_project_update(self, test_db):
         """Test updating project."""

@@ -4,7 +4,14 @@ import logging
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from models.database import Artifact, Conversation, Deployment, MessageRole, Project, ProjectStatus
+from models.database import (
+    Artifact,
+    Conversation,
+    Deployment,
+    MessageRole,
+    Project,
+    ProjectStatus,
+)
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -13,12 +20,7 @@ logger = logging.getLogger(__name__)
 class ProjectService:
     """Manages software development projects."""
 
-    def create_project(
-        self,
-        name: str,
-        description: str,
-        session: Session
-    ) -> Project:
+    def create_project(self, name: str, description: str, session: Session) -> Project:
         """Create a new project.
 
         Args:
@@ -41,7 +43,7 @@ class ProjectService:
             project_id=project.id,
             role=MessageRole.SYSTEM.value,
             content=f"Project '{name}' created. Ready to start development.",
-            message_metadata={"event": "project_created"}
+            message_metadata={"event": "project_created"},
         )
         session.add(system_msg)
 
@@ -64,10 +66,7 @@ class ProjectService:
         return session.query(Project).filter(Project.id == project_id).first()
 
     def list_projects(
-        self,
-        session: Session,
-        status: Optional[str] = None,
-        limit: int = 50
+        self, session: Session, status: Optional[str] = None, limit: int = 50
     ) -> List[Project]:
         """List projects.
 
@@ -87,10 +86,7 @@ class ProjectService:
         return query.order_by(Project.updated_at.desc()).limit(limit).all()
 
     def update_project_status(
-        self,
-        project_id: UUID,
-        status: ProjectStatus,
-        session: Session
+        self, project_id: UUID, status: ProjectStatus, session: Session
     ) -> Project:
         """Update project status.
 
@@ -119,7 +115,7 @@ class ProjectService:
         artifact_type: str,
         path: str,
         content: str,
-        session: Session
+        session: Session,
     ) -> Artifact:
         """Save a project artifact.
 
@@ -166,7 +162,7 @@ class ProjectService:
         self,
         project_id: UUID,
         artifact_type: Optional[str] = None,
-        session: Session = None
+        session: Session = None,
     ) -> List[Artifact]:
         """Get project artifacts.
 
@@ -192,7 +188,7 @@ class ProjectService:
         deployment_url: str,
         cloud_provider: str,
         resource_ids: Dict[str, Any],
-        session: Session
+        session: Session,
     ) -> Deployment:
         """Record a deployment.
 
