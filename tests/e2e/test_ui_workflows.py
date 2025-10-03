@@ -107,21 +107,36 @@ class TestUIWorkflows:
 
     @pytest.mark.asyncio
     async def test_create_project_endpoint(self, page, app_url):
-        """Test creating a project via API endpoint."""
-        try:
-            # Navigate to API docs
-            await page.goto(f"{app_url}/docs", timeout=10000)
-            await page.wait_for_selector(".swagger-ui", timeout=5000)
+        """Test creating a project via API endpoint - actually creates a project."""
+        import httpx
 
-            # Find the POST /api/v1/projects endpoint
-            post_endpoints = page.locator("text=/api/v1/projects")
-            if await post_endpoints.count() > 0:
-                # Endpoint exists
-                assert True
-            else:
-                pytest.skip("POST /api/v1/projects endpoint not found in docs")
-        except Exception as e:
-            pytest.skip(f"Could not test project creation: {e}")
+        async with httpx.AsyncClient() as client:
+            # Test project creation through API
+            response = await client.post(
+                f"{app_url}/api/v2/projects",
+                json={
+                    "name": "E2E Test Project",
+                    "description": "Created during E2E testing",
+                },
+            )
+
+            # Verify successful creation
+            assert (
+                response.status_code == 200
+            ), f"Failed to create project: {response.text}"
+
+            data = response.json()
+            assert "id" in data
+            assert data["name"] == "E2E Test Project"
+            assert data["description"] == "Created during E2E testing"
+
+            # Verify project appears in list
+            list_response = await client.get(f"{app_url}/api/v2/projects")
+            assert list_response.status_code == 200
+
+            projects = list_response.json()
+            assert len(projects) > 0
+            assert any(p["name"] == "E2E Test Project" for p in projects)
 
     @pytest.mark.asyncio
     async def test_list_projects_endpoint(self, page, app_url):

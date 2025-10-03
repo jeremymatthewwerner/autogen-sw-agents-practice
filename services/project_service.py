@@ -37,6 +37,7 @@ class ProjectService:
             status=ProjectStatus.PLANNING.value,
         )
         session.add(project)
+        session.flush()  # Flush to generate project.id
 
         # Add initial system message
         system_msg = Conversation(
