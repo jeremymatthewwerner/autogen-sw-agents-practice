@@ -108,7 +108,12 @@ class TestECSDeployment:
     @patch("cloud_api.ENVIRONMENT", "dev")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_ecs_creates_repository(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test ECS deployment creates ECR repository."""
         # Setup mocks
@@ -164,7 +169,12 @@ class TestECSDeployment:
     @patch("cloud_api.ENVIRONMENT", "dev")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_ecs_uses_existing_repository(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test ECS deployment uses existing ECR repository."""
         mock_ecr = MagicMock()
@@ -177,7 +187,9 @@ class TestECSDeployment:
         class RepositoryAlreadyExistsException(Exception):
             pass
 
-        mock_ecr.exceptions.RepositoryAlreadyExistsException = RepositoryAlreadyExistsException
+        mock_ecr.exceptions.RepositoryAlreadyExistsException = (
+            RepositoryAlreadyExistsException
+        )
 
         # Simulate repository already exists
         mock_ecr.create_repository.side_effect = RepositoryAlreadyExistsException(
@@ -222,7 +234,12 @@ class TestLambdaDeployment:
     @patch("cloud_api.ENVIRONMENT", "dev")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_lambda_creates_function(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test Lambda deployment creates function."""
         mock_lambda = MagicMock()
@@ -261,7 +278,12 @@ class TestLambdaDeployment:
     @patch("cloud_api.ENVIRONMENT", "dev")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_lambda_updates_existing_function(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test Lambda deployment updates existing function."""
         mock_lambda = MagicMock()
@@ -306,7 +328,12 @@ class TestBeanstalkDeployment:
     @patch("cloud_api.ENVIRONMENT", "dev")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_beanstalk_creates_application(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test Beanstalk deployment creates application."""
         mock_eb = MagicMock()
@@ -350,13 +377,20 @@ class TestBeanstalkDeployment:
     @patch("cloud_api.ENVIRONMENT", "prod")
     @patch("cloud_api.AWS_REGION", "us-east-1")
     async def test_deploy_to_beanstalk_prod_uses_load_balanced(
-        self, mock_s3_client, mock_boto_client, mock_project_state, mock_deployment_config, mock_backend_code
+        self,
+        mock_s3_client,
+        mock_boto_client,
+        mock_project_state,
+        mock_deployment_config,
+        mock_backend_code,
     ):
         """Test Beanstalk deployment uses LoadBalanced for production."""
         mock_eb = MagicMock()
         mock_boto_client.return_value = mock_eb
 
-        mock_eb.create_environment.return_value = {"CNAME": "test-app.elasticbeanstalk.com"}
+        mock_eb.create_environment.return_value = {
+            "CNAME": "test-app.elasticbeanstalk.com"
+        }
 
         await deploy_to_beanstalk(
             "test-project-123",

@@ -1,0 +1,96 @@
+{
+  "project_id": "9a63f79b-b244-41ed-ab32-e84ce1e2e563",
+  "project_name": "Test Project",
+  "requirements": {
+    "raw": "Test requirements"
+  },
+  "architecture": {},
+  "tasks": {
+    "fe80b8a1-5f90-4def-9c79-b88f405bdeac": {
+      "id": "fe80b8a1-5f90-4def-9c79-b88f405bdeac",
+      "name": "Analyze Requirements",
+      "description": "Convert natural language requirements to structured specifications",
+      "assigned_to": "ProductManager",
+      "status": "failed",
+      "dependencies": [],
+      "created_at": "2025-10-03T22:32:43.922022",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    },
+    "a701ac4a-aff3-4772-9d87-60884b4ab6a6": {
+      "id": "a701ac4a-aff3-4772-9d87-60884b4ab6a6",
+      "name": "Design Architecture",
+      "description": "Create system architecture and technical design",
+      "assigned_to": "Architect",
+      "status": "pending",
+      "dependencies": [
+        "fe80b8a1-5f90-4def-9c79-b88f405bdeac"
+      ],
+      "created_at": "2025-10-03T22:32:43.922026",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    },
+    "6234bca6-5e2f-42e4-adde-39ff25b28990": {
+      "id": "6234bca6-5e2f-42e4-adde-39ff25b28990",
+      "name": "Implement Backend",
+      "description": "Develop backend APIs and business logic",
+      "assigned_to": "BackendDeveloper",
+      "status": "pending",
+      "dependencies": [
+        "a701ac4a-aff3-4772-9d87-60884b4ab6a6"
+      ],
+      "created_at": "2025-10-03T22:32:43.922029",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    },
+    "07fe3f6c-336e-4250-8e6f-7e6aa494a960": {
+      "id": "07fe3f6c-336e-4250-8e6f-7e6aa494a960",
+      "name": "Write Tests",
+      "description": "Create unit and integration tests",
+      "assigned_to": "QAEngineer",
+      "status": "pending",
+      "dependencies": [
+        "6234bca6-5e2f-42e4-adde-39ff25b28990"
+      ],
+      "created_at": "2025-10-03T22:32:43.922033",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    },
+    "0a200d59-3299-429a-982e-6d3ecc0d8d66": {
+      "id": "0a200d59-3299-429a-982e-6d3ecc0d8d66",
+      "name": "Prepare Deployment",
+      "description": "Setup CI/CD and deployment configuration",
+      "assigned_to": "DevOpsEngineer",
+      "status": "pending",
+      "dependencies": [
+        "07fe3f6c-336e-4250-8e6f-7e6aa494a960"
+      ],
+      "created_at": "2025-10-03T22:32:43.922036",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    },
+    "3db6ecca-7feb-4dc6-935a-486b4bd8e66c": {
+      "id": "3db6ecca-7feb-4dc6-935a-486b4bd8e66c",
+      "name": "Create User Documentation",
+      "description": "Generate comprehensive end-user documentation including README, user guide, API docs, and FAQ",
+      "assigned_to": "DocumentationAgent",
+      "status": "pending",
+      "dependencies": [
+        "0a200d59-3299-429a-982e-6d3ecc0d8d66"
+      ],
+      "created_at": "2025-10-03T22:32:43.922040",
+      "completed_at": null,
+      "output": null,
+      "error": null
+    }
+  },
+  "phase": "requirements",
+  "artifacts": {},
+  "quality_metrics": {},
+  "created_at": "2025-10-03T22:32:43.921964"
+}

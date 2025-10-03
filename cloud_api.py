@@ -92,7 +92,9 @@ conversation_service = ConversationService(project_service)
 
 # Set multi-agent system for conversation service
 from services.conversation_service import set_multi_agent_system
+
 set_multi_agent_system(multi_agent_system)
+
 
 # Database dependency
 def get_db():
@@ -167,8 +169,8 @@ async def api_info():
             "health": "/health",
             "docs": "/docs",
             "redoc": "/redoc",
-            "api": "/api/v1"
-        }
+            "api": "/api/v1",
+        },
     }
 
 
@@ -226,10 +228,7 @@ async def get_status():
         logger.error("Status check failed", error=str(e))
         # Return a basic status if detailed status fails
         return StatusResponse(
-            status="error",
-            agents_active=0,
-            current_task=None,
-            agents=[]
+            status="error", agents_active=0, current_task=None, agents=[]
         )
 
 
@@ -465,11 +464,17 @@ async def deploy_to_aws(project_id: str, deployment_target: str):
         backend_code = project_state.artifacts.get("backend_code", {})
 
         if deployment_target == "ecs":
-            await deploy_to_ecs(project_id, project_state, deployment_config, backend_code)
+            await deploy_to_ecs(
+                project_id, project_state, deployment_config, backend_code
+            )
         elif deployment_target == "lambda":
-            await deploy_to_lambda(project_id, project_state, deployment_config, backend_code)
+            await deploy_to_lambda(
+                project_id, project_state, deployment_config, backend_code
+            )
         elif deployment_target == "beanstalk":
-            await deploy_to_beanstalk(project_id, project_state, deployment_config, backend_code)
+            await deploy_to_beanstalk(
+                project_id, project_state, deployment_config, backend_code
+            )
         else:
             logger.warning(
                 "Unknown deployment target",
@@ -493,7 +498,9 @@ async def deploy_to_ecs(
         ecr_client = boto3.client("ecr", region_name=AWS_REGION)
 
         # Create ECR repository for the project
-        repo_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        repo_name = (
+            f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        )
         try:
             ecr_response = ecr_client.create_repository(
                 repositoryName=repo_name,
@@ -503,13 +510,17 @@ async def deploy_to_ecs(
             repository_uri = ecr_response["repository"]["repositoryUri"]
             logger.info("ECR repository created", repository_uri=repository_uri)
         except ecr_client.exceptions.RepositoryAlreadyExistsException:
-            describe_response = ecr_client.describe_repositories(repositoryNames=[repo_name])
+            describe_response = ecr_client.describe_repositories(
+                repositoryNames=[repo_name]
+            )
             repository_uri = describe_response["repositories"][0]["repositoryUri"]
             logger.info("Using existing ECR repository", repository_uri=repository_uri)
 
         # Store Docker build instructions in S3
         if S3_BUCKET_NAME:
-            dockerfile_content = deployment_config.get("dockerfile", _get_default_dockerfile(backend_code))
+            dockerfile_content = deployment_config.get(
+                "dockerfile", _get_default_dockerfile(backend_code)
+            )
             s3_client.put_object(
                 Bucket=S3_BUCKET_NAME,
                 Key=f"projects/{project_id}/deployment/Dockerfile",
@@ -518,7 +529,9 @@ async def deploy_to_ecs(
             )
 
         # Create ECS task definition
-        task_family = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        task_family = (
+            f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        )
         task_definition = {
             "family": task_family,
             "networkMode": "awsvpc",
@@ -543,7 +556,10 @@ async def deploy_to_ecs(
                         },
                     },
                     "healthCheck": {
-                        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
+                        "command": [
+                            "CMD-SHELL",
+                            "curl -f http://localhost:8000/health || exit 1",
+                        ],
                         "interval": 30,
                         "timeout": 5,
                         "retries": 3,
@@ -557,7 +573,9 @@ async def deploy_to_ecs(
         # Register task definition
         register_response = ecs_client.register_task_definition(**task_definition)
         task_definition_arn = register_response["taskDefinition"]["taskDefinitionArn"]
-        logger.info("ECS task definition registered", task_definition_arn=task_definition_arn)
+        logger.info(
+            "ECS task definition registered", task_definition_arn=task_definition_arn
+        )
 
         # Store deployment info in project state
         project_state.artifacts["aws_deployment"] = {
@@ -566,7 +584,11 @@ async def deploy_to_ecs(
             "task_definition_arn": task_definition_arn,
             "deployed_at": datetime.utcnow().isoformat(),
             "region": AWS_REGION,
-            "build_instructions": f"s3://{S3_BUCKET_NAME}/projects/{project_id}/deployment/Dockerfile" if S3_BUCKET_NAME else None,
+            "build_instructions": (
+                f"s3://{S3_BUCKET_NAME}/projects/{project_id}/deployment/Dockerfile"
+                if S3_BUCKET_NAME
+                else None
+            ),
         }
 
         logger.info(
@@ -591,12 +613,16 @@ async def deploy_to_lambda(
     try:
         lambda_client = boto3.client("lambda", region_name=AWS_REGION)
 
-        function_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        function_name = (
+            f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        )
 
         # Store Lambda deployment package location in S3
         if S3_BUCKET_NAME:
             lambda_handler_content = _generate_lambda_handler(backend_code)
-            deployment_package_key = f"projects/{project_id}/deployment/lambda-package.zip"
+            deployment_package_key = (
+                f"projects/{project_id}/deployment/lambda-package.zip"
+            )
 
             s3_client.put_object(
                 Bucket=S3_BUCKET_NAME,
@@ -673,7 +699,9 @@ async def deploy_to_beanstalk(
     try:
         eb_client = boto3.client("elasticbeanstalk", region_name=AWS_REGION)
 
-        app_name = f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        app_name = (
+            f"{ENVIRONMENT}-{project_state.project_name.lower().replace(' ', '-')}"
+        )
         env_name = f"{app_name}-env"
 
         # Create application if it doesn't exist
@@ -682,9 +710,14 @@ async def deploy_to_beanstalk(
                 ApplicationName=app_name,
                 Description=f"Generated by multi-agent system - {project_state.project_name}",
             )
-            logger.info("Elastic Beanstalk application created", application_name=app_name)
+            logger.info(
+                "Elastic Beanstalk application created", application_name=app_name
+            )
         except eb_client.exceptions.TooManyApplicationsException:
-            logger.info("Using existing Elastic Beanstalk application", application_name=app_name)
+            logger.info(
+                "Using existing Elastic Beanstalk application",
+                application_name=app_name,
+            )
 
         # Store deployment bundle in S3
         if S3_BUCKET_NAME:
@@ -710,7 +743,11 @@ async def deploy_to_beanstalk(
                         {
                             "Namespace": "aws:elasticbeanstalk:environment",
                             "OptionName": "EnvironmentType",
-                            "Value": "SingleInstance" if ENVIRONMENT == "dev" else "LoadBalanced",
+                            "Value": (
+                                "SingleInstance"
+                                if ENVIRONMENT == "dev"
+                                else "LoadBalanced"
+                            ),
                         },
                         {
                             "Namespace": "aws:elasticbeanstalk:application:environment",
@@ -720,7 +757,9 @@ async def deploy_to_beanstalk(
                     ],
                 )
                 environment_url = env_response.get("CNAME", "")
-                logger.info("Elastic Beanstalk environment created", environment_name=env_name)
+                logger.info(
+                    "Elastic Beanstalk environment created", environment_name=env_name
+                )
             except eb_client.exceptions.TooManyEnvironmentsException:
                 eb_client.update_environment(
                     EnvironmentName=env_name, VersionLabel=version_label
@@ -729,14 +768,18 @@ async def deploy_to_beanstalk(
                     ApplicationName=app_name, EnvironmentNames=[env_name]
                 )
                 environment_url = environments["Environments"][0].get("CNAME", "")
-                logger.info("Elastic Beanstalk environment updated", environment_name=env_name)
+                logger.info(
+                    "Elastic Beanstalk environment updated", environment_name=env_name
+                )
 
             # Store deployment info
             project_state.artifacts["aws_deployment"] = {
                 "deployment_type": "beanstalk",
                 "application_name": app_name,
                 "environment_name": env_name,
-                "environment_url": f"http://{environment_url}" if environment_url else None,
+                "environment_url": (
+                    f"http://{environment_url}" if environment_url else None
+                ),
                 "version_label": version_label,
                 "deployed_at": datetime.utcnow().isoformat(),
                 "region": AWS_REGION,
@@ -750,7 +793,9 @@ async def deploy_to_beanstalk(
             )
 
     except Exception as e:
-        logger.error("Elastic Beanstalk deployment failed", project_id=project_id, error=str(e))
+        logger.error(
+            "Elastic Beanstalk deployment failed", project_id=project_id, error=str(e)
+        )
         raise
 
 
@@ -865,6 +910,7 @@ async def get_metrics():
 
 # ==================== NEW CONVERSATIONAL API ENDPOINTS ====================
 
+
 # Request/Response models for conversational API
 class CreateConversationalProjectRequest(BaseModel):
     name: str
@@ -900,15 +946,12 @@ class ConversationHistoryResponse(BaseModel):
 
 @app.post("/api/v2/projects", response_model=ConversationalProjectResponse)
 async def create_conversational_project(
-    request: CreateConversationalProjectRequest,
-    session: Session = Depends(get_db)
+    request: CreateConversationalProjectRequest, session: Session = Depends(get_db)
 ):
     """Create a new conversational project."""
     try:
         project = project_service.create_project(
-            name=request.name,
-            description=request.description,
-            session=session
+            name=request.name, description=request.description, session=session
         )
 
         return ConversationalProjectResponse(
@@ -928,8 +971,7 @@ async def create_conversational_project(
 
 @app.get("/api/v2/projects", response_model=List[ConversationalProjectResponse])
 async def list_conversational_projects(
-    status: Optional[str] = None,
-    session: Session = Depends(get_db)
+    status: Optional[str] = None, session: Session = Depends(get_db)
 ):
     """List all conversational projects."""
     try:
@@ -955,8 +997,7 @@ async def list_conversational_projects(
 
 @app.get("/api/v2/projects/{project_id}", response_model=ConversationalProjectResponse)
 async def get_conversational_project(
-    project_id: UUID,
-    session: Session = Depends(get_db)
+    project_id: UUID, session: Session = Depends(get_db)
 ):
     """Get a specific conversational project."""
     try:
@@ -984,16 +1025,12 @@ async def get_conversational_project(
 
 @app.post("/api/v2/projects/{project_id}/messages", response_model=MessageResponse)
 async def send_project_message(
-    project_id: UUID,
-    request: SendMessageRequest,
-    session: Session = Depends(get_db)
+    project_id: UUID, request: SendMessageRequest, session: Session = Depends(get_db)
 ):
     """Send a message in a project conversation."""
     try:
         response = await conversation_service.send_message(
-            project_id=project_id,
-            user_message=request.message,
-            session=session
+            project_id=project_id, user_message=request.message, session=session
         )
 
         return MessageResponse(
@@ -1007,26 +1044,21 @@ async def send_project_message(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(
-            "Failed to send message",
-            project_id=str(project_id),
-            error=str(e)
-        )
+        logger.error("Failed to send message", project_id=str(project_id), error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/v2/projects/{project_id}/conversation", response_model=ConversationHistoryResponse)
+@app.get(
+    "/api/v2/projects/{project_id}/conversation",
+    response_model=ConversationHistoryResponse,
+)
 async def get_project_conversation(
-    project_id: UUID,
-    limit: int = 50,
-    session: Session = Depends(get_db)
+    project_id: UUID, limit: int = 50, session: Session = Depends(get_db)
 ):
     """Get conversation history for a project."""
     try:
         history = conversation_service._get_conversation_history(
-            project_id=project_id,
-            session=session,
-            limit=limit
+            project_id=project_id, session=session, limit=limit
         )
 
         messages = [
@@ -1041,23 +1073,19 @@ async def get_project_conversation(
         ]
 
         return ConversationHistoryResponse(
-            project_id=str(project_id),
-            messages=messages
+            project_id=str(project_id), messages=messages
         )
 
     except Exception as e:
         logger.error(
-            "Failed to get conversation",
-            project_id=str(project_id),
-            error=str(e)
+            "Failed to get conversation", project_id=str(project_id), error=str(e)
         )
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/v2/projects/{project_id}")
 async def delete_conversational_project(
-    project_id: UUID,
-    session: Session = Depends(get_db)
+    project_id: UUID, session: Session = Depends(get_db)
 ):
     """Delete a conversational project."""
     try:
@@ -1072,9 +1100,7 @@ async def delete_conversational_project(
         raise
     except Exception as e:
         logger.error(
-            "Failed to delete project",
-            project_id=str(project_id),
-            error=str(e)
+            "Failed to delete project", project_id=str(project_id), error=str(e)
         )
         raise HTTPException(status_code=500, detail=str(e))
 

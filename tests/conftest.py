@@ -18,6 +18,7 @@ try:
     from agents.product_manager import ProductManagerAgent
     from agents.qa_engineer import QAEngineerAgent
     from multi_agent_system import MultiAgentSystem
+
     AGENTS_AVAILABLE = True
 except ImportError:
     # E2E tests don't need agent fixtures
@@ -38,13 +39,13 @@ def mock_anthropic_api():
 
 # Only define agent fixtures if agents are available
 if AGENTS_AVAILABLE:
+
     @pytest.fixture
     def product_manager_agent(mock_anthropic_api):
         """Create a ProductManager agent with mocked Claude API."""
         agent = ProductManagerAgent()
         agent.process_request_async = mock_anthropic_api
         return agent
-
 
     @pytest.fixture
     def architect_agent(mock_anthropic_api):
@@ -53,14 +54,12 @@ if AGENTS_AVAILABLE:
         agent.process_request_async = mock_anthropic_api
         return agent
 
-
     @pytest.fixture
     def backend_developer_agent(mock_anthropic_api):
         """Create a BackendDeveloper agent with mocked Claude API."""
         agent = BackendDeveloperAgent()
         agent.process_request_async = mock_anthropic_api
         return agent
-
 
     @pytest.fixture
     def qa_engineer_agent(mock_anthropic_api):
@@ -69,14 +68,12 @@ if AGENTS_AVAILABLE:
         agent.process_request_async = mock_anthropic_api
         return agent
 
-
     @pytest.fixture
     def devops_engineer_agent(mock_anthropic_api):
         """Create a DevOpsEngineer agent with mocked Claude API."""
         agent = DevOpsEngineerAgent()
         agent.process_request_async = mock_anthropic_api
         return agent
-
 
     @pytest.fixture
     def documentation_agent(mock_anthropic_api):
@@ -85,12 +82,10 @@ if AGENTS_AVAILABLE:
         agent.process_request_async = mock_anthropic_api
         return agent
 
-
     @pytest.fixture
     def orchestrator_agent():
         """Create an orchestrator agent for testing."""
         return OrchestratorAgent()
-
 
     @pytest.fixture
     def multi_agent_system(orchestrator_agent):
@@ -118,10 +113,13 @@ def sample_requirements():
 
 
 if AGENTS_AVAILABLE:
+
     @pytest.fixture
     def sample_project_id(orchestrator_agent, sample_requirements):
         """Create a sample project for testing."""
-        return orchestrator_agent.create_project("Test Project", sample_requirements["raw"])
+        return orchestrator_agent.create_project(
+            "Test Project", sample_requirements["raw"]
+        )
 
 
 @pytest.fixture(autouse=True)

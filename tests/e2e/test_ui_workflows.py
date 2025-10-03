@@ -98,7 +98,10 @@ class TestUIWorkflows:
 
         # Check that API title is present
         page_content = await page.content()
-        assert "Multi-Agent Software Development System" in page_content or "swagger" in page_content.lower()
+        assert (
+            "Multi-Agent Software Development System" in page_content
+            or "swagger" in page_content.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_create_project_endpoint(self, page, app_url):
@@ -187,12 +190,11 @@ class TestUIWorkflows:
             project_data = {
                 "project_name": "E2E Test Project",
                 "requirements": "Build a simple REST API for testing",
-                "deployment_target": "ecs"
+                "deployment_target": "ecs",
             }
 
             response = await page.request.post(
-                f"{app_url}/api/v1/projects",
-                data=project_data
+                f"{app_url}/api/v1/projects", data=project_data
             )
 
             assert response.status == 200
@@ -292,12 +294,11 @@ class TestUIWorkflows:
             project_data = {
                 "project_name": "Task Test Project",
                 "requirements": "Simple API",
-                "deployment_target": "lambda"
+                "deployment_target": "lambda",
             }
 
             create_response = await page.request.post(
-                f"{app_url}/api/v1/projects",
-                data=project_data
+                f"{app_url}/api/v1/projects", data=project_data
             )
 
             if create_response.status == 200:
@@ -341,12 +342,11 @@ class TestUIWorkflows:
             project_data = {
                 "project_name": "Status Test Project",
                 "requirements": "Test project for status stability",
-                "deployment_target": "ecs"
+                "deployment_target": "ecs",
             }
 
             create_response = await page.request.post(
-                f"{app_url}/api/v1/projects",
-                data=project_data
+                f"{app_url}/api/v1/projects", data=project_data
             )
 
             if create_response.status == 200:
@@ -367,7 +367,8 @@ class TestUIWorkflows:
                 # Status should be consistent or progressively moving forward
                 # Should not flash back and forth
                 if len(statuses) > 1:
-                    assert statuses[0] == statuses[1] or statuses[0] != statuses[2], \
-                        "Status should not flash back and forth"
+                    assert (
+                        statuses[0] == statuses[1] or statuses[0] != statuses[2]
+                    ), "Status should not flash back and forth"
         except Exception as e:
             pytest.skip(f"Could not test status flashing regression: {e}")

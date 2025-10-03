@@ -57,6 +57,10 @@ xxhash==3.5.0
 zipp==3.23.0
 zstandard==0.25.0
 
+# AWS dependencies
+boto3==1.37.46
+structlog==24.4.0
+
 # Testing dependencies
 pytest==8.3.4
 pytest-asyncio==0.25.0

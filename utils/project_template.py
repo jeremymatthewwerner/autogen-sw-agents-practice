@@ -13,9 +13,7 @@ class ProjectTemplate:
 
     @staticmethod
     def generate_fastapi_project(
-        project_name: str,
-        description: str,
-        features: List[str] = None
+        project_name: str, description: str, features: List[str] = None
     ) -> Dict[str, str]:
         """Generate a complete FastAPI project template.
 
@@ -33,7 +31,9 @@ class ProjectTemplate:
         files = {}
 
         # Main application file
-        files["main.py"] = f'''"""
+        files[
+            "main.py"
+        ] = f'''"""
 {description}
 """
 
@@ -97,16 +97,20 @@ if __name__ == "__main__":
 '''
 
         # Requirements.txt
-        files["requirements.txt"] = '''fastapi==0.115.6
+        files[
+            "requirements.txt"
+        ] = """fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 python-dotenv==1.0.1
 pytest==8.3.4
 httpx==0.28.1
-'''
+"""
 
         # Dockerfile
-        files["Dockerfile"] = f'''FROM python:3.11-slim
+        files[
+            "Dockerfile"
+        ] = f"""FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -122,10 +126,12 @@ EXPOSE 8000
 
 # Run application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-'''
+"""
 
         # .dockerignore
-        files[".dockerignore"] = '''__pycache__
+        files[
+            ".dockerignore"
+        ] = """__pycache__
 *.pyc
 *.pyo
 *.pyd
@@ -138,16 +144,24 @@ venv/
 .gitignore
 README.md
 tests/
-'''
+"""
 
         # README.md
-        files["README.md"] = f'''# {project_name}
+        default_features = "- RESTful API\n- Health check endpoint"
+        features_text = (
+            chr(10).join(f"- {feature}" for feature in features)
+            if features
+            else default_features
+        )
+        files[
+            "README.md"
+        ] = f"""# {project_name}
 
 {description}
 
 ## Features
 
-{chr(10).join(f"- {feature}" for feature in features) if features else "- RESTful API\\n- Health check endpoint"}
+{features_text}
 
 ## Installation
 
@@ -199,11 +213,13 @@ This application is ready to deploy to:
 - Kubernetes
 
 See deployment/ directory for configuration files.
-'''
+"""
 
         # Test file
         files["tests/__init__.py"] = ""
-        files["tests/test_main.py"] = '''"""Tests for main application."""
+        files[
+            "tests/test_main.py"
+        ] = '''"""Tests for main application."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -230,7 +246,9 @@ def test_health():
 '''
 
         # GitHub Actions workflow
-        files[".github/workflows/ci-cd.yml"] = f'''name: CI/CD
+        files[
+            ".github/workflows/ci-cd.yml"
+        ] = f"""name: CI/CD
 
 on:
   push:
@@ -278,16 +296,20 @@ jobs:
         docker build -t {safe_name}:latest .
 
     # Add deployment steps here based on target platform
-'''
+"""
 
         # .env.example
-        files[".env.example"] = '''# Environment variables
+        files[
+            ".env.example"
+        ] = """# Environment variables
 DEBUG=False
 LOG_LEVEL=INFO
-'''
+"""
 
         # .gitignore
-        files[".gitignore"] = '''# Python
+        files[
+            ".gitignore"
+        ] = """# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -332,12 +354,14 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
-'''
+"""
 
         return files
 
     @staticmethod
-    def add_database_support(files: Dict[str, str], db_type: str = "sqlite") -> Dict[str, str]:
+    def add_database_support(
+        files: Dict[str, str], db_type: str = "sqlite"
+    ) -> Dict[str, str]:
         """Add database support to project files.
 
         Args:
@@ -349,17 +373,21 @@ Thumbs.db
         """
         # Add database dependencies to requirements.txt
         if "requirements.txt" in files:
-            files["requirements.txt"] += f'''
+            files[
+                "requirements.txt"
+            ] += f"""
 sqlalchemy==2.0.43
 alembic==1.14.0
-'''
+"""
             if db_type == "postgresql":
                 files["requirements.txt"] += "psycopg2-binary==2.9.10\n"
             elif db_type == "mysql":
                 files["requirements.txt"] += "pymysql==1.1.1\n"
 
         # Add database module
-        files["database.py"] = f'''"""Database configuration."""
+        files[
+            "database.py"
+        ] = f'''"""Database configuration."""
 
 import os
 from sqlalchemy import create_engine
@@ -388,7 +416,9 @@ def get_db():
 '''
 
         # Add models example
-        files["models.py"] = '''"""Database models."""
+        files[
+            "models.py"
+        ] = '''"""Database models."""
 
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
@@ -420,13 +450,17 @@ class Item(Base):
         """
         # Add auth dependencies
         if "requirements.txt" in files:
-            files["requirements.txt"] += '''python-jose[cryptography]==3.3.0
+            files[
+                "requirements.txt"
+            ] += """python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
-'''
+"""
 
         # Add auth module
-        files["auth.py"] = '''"""Authentication and authorization."""
+        files[
+            "auth.py"
+        ] = '''"""Authentication and authorization."""
 
 from datetime import datetime, timedelta
 from typing import Optional
