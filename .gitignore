@@ -52,4 +52,4 @@ htmlcov/
 .terraform.lock.hcl
 
 # Generated projects
-projects/
+projects/*.db

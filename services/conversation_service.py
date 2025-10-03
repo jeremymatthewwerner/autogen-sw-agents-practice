@@ -90,7 +90,7 @@ class ConversationService:
                 project_id=project_id,
                 role=MessageRole.ASSISTANT.value,
                 content=response["content"],
-                metadata=response.get("metadata", {}),
+                message_metadata=response.get("metadata", {}),
                 agent_name=response.get("agent_name"),
             )
             session.add(assistant_conv)
@@ -109,7 +109,7 @@ class ConversationService:
                 project_id=project_id,
                 role=MessageRole.ASSISTANT.value,
                 content=error_response["content"],
-                metadata=error_response["metadata"],
+                message_metadata=error_response["metadata"],
             )
             session.add(assistant_conv)
             session.commit()
@@ -144,7 +144,7 @@ class ConversationService:
             {
                 "role": conv.role,
                 "content": conv.content,
-                "metadata": conv.metadata or {},
+                "metadata": conv.message_metadata or {},
                 "agent_name": conv.agent_name,
                 "created_at": conv.created_at.isoformat(),
             }

@@ -84,7 +84,7 @@ class Conversation(Base):
     content = Column(Text, nullable=False)
 
     # Metadata
-    metadata = Column(JSON)  # Agent responses, file changes, task results, etc.
+    message_metadata = Column(JSON)  # Agent responses, file changes, task results, etc.
     agent_name = Column(String(100))  # Which agent generated this (if assistant)
 
     # Timestamps
@@ -138,7 +138,7 @@ class Deployment(Base):
     # Logs and metadata
     logs = Column(Text)
     error_message = Column(Text)
-    metadata = Column(JSON)
+    deployment_metadata = Column(JSON)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

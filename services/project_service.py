@@ -41,7 +41,7 @@ class ProjectService:
             project_id=project.id,
             role=MessageRole.SYSTEM.value,
             content=f"Project '{name}' created. Ready to start development.",
-            metadata={"event": "project_created"}
+            message_metadata={"event": "project_created"}
         )
         session.add(system_msg)
 
