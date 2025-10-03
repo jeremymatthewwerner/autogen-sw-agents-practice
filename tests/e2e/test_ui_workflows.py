@@ -76,16 +76,18 @@ class TestUIWorkflows:
         # Wait for page load
         await page.wait_for_load_state("networkidle", timeout=10000)
 
-        # Wait for agent status section
-        await page.wait_for_selector("#agentStatus", timeout=10000)
+        # Wait for conversational UI elements (sidebar and chat area)
+        await page.wait_for_selector(".sidebar", timeout=10000)
 
-        # Check that agent status loaded (not showing error message)
-        agent_status_text = await page.text_content("#agentStatus")
-        assert "Unable to load" not in agent_status_text, "Agent status failed to load"
+        # Check that sidebar loaded with project list or create button
+        sidebar_text = await page.text_content(".sidebar")
+        assert (
+            "New Project" in sidebar_text or "No projects yet" in sidebar_text
+        ), "Sidebar failed to load"
 
-        # Verify we have agent cards displayed
-        agent_cards = await page.query_selector_all(".agent-status")
-        assert len(agent_cards) > 0, "No agent status cards found"
+        # Verify we have chat container displayed
+        chat_container = await page.query_selector(".chat-container")
+        assert chat_container is not None, "Chat container not found"
 
     @pytest.mark.asyncio
     async def test_api_docs_accessible(self, page, app_url):

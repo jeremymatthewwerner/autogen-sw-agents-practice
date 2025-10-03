@@ -7,6 +7,12 @@ set -e  # Exit on any error
 echo "🧪 Running full local test suite..."
 echo ""
 
+# Activate virtual environment
+echo "🔧 Activating virtual environment..."
+source .venv/bin/activate
+echo "✅ Virtual environment activated"
+echo ""
+
 # 1. Unit and Integration tests
 echo "📋 Step 1/5: Running unit and integration tests..."
 PYTHONPATH=. pytest tests/unit/ tests/integration/ -v -m "not slow" --tb=short
